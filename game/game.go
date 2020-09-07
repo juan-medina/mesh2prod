@@ -47,6 +47,7 @@ const (
 	meshX           = 310                                // mesh scale
 	meshSpeed       = float32(100)                       // mesh speed
 	topMeshSpeed    = meshSpeed * 2                      // top mesh speed
+	music           = "resources/music/loop.ogg"         // our game music
 )
 
 var (
@@ -67,6 +68,11 @@ func Load(eng *gosge.Engine) error {
 
 	// gameScale from the real screen size to our design resolution
 	gameScale := eng.GetScreenSize().CalculateScale(designResolution)
+
+	// load the music
+	if err = eng.LoadMusic(music); err != nil {
+		return err
+	}
 
 	// load the sprite sheet
 	if err = eng.LoadSpriteSheet(spriteSheet); err != nil {
@@ -162,7 +168,8 @@ func Load(eng *gosge.Engine) error {
 	// add the move system
 	world.AddSystem(moveSystem)
 
-	return nil
+	// play the music
+	return world.Signal(events.PlayMusicEvent{Name: music})
 }
 
 // move system
@@ -197,7 +204,7 @@ func keyMoveListener(_ *goecs.World, signal interface{}, _ float32) error {
 			mov := planeEnt.Get(movementType).(movement)
 			anim := animation.Get.Animation(planeEnt)
 
-			// if we have pres the key calculate the speed
+			// if we have press the key calculate the speed
 			if e.Status.Pressed {
 				switch e.Key {
 				case device.KeyUp:
