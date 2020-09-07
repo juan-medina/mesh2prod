@@ -29,7 +29,7 @@ GOGET=$(GOCMD) get
 GOMOD=$(GOCMD) mod
 GOLINT=golint
 
-default: test
+default: validate
 
 vet:
 	$(GOVET) ./...

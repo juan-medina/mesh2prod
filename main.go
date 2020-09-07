@@ -23,13 +23,11 @@
 package main
 
 import (
-	"log"
-
 	"github.com/juan-medina/gosge"
 	"github.com/juan-medina/gosge/components/color"
-	"github.com/juan-medina/gosge/components/geometry"
-	"github.com/juan-medina/gosge/components/ui"
 	"github.com/juan-medina/gosge/options"
+	"github.com/juan-medina/mesh2prod/game"
+	"github.com/rs/zerolog/log"
 )
 
 // game options
@@ -38,49 +36,8 @@ var opt = options.Options{
 	BackGround: color.Black,
 }
 
-const (
-	fontName = "resources/fonts/go_regular.fnt"
-	fontSize = 100
-)
-
-var (
-	// designResolution is how our game is designed
-	designResolution = geometry.Size{Width: 1920, Height: 1080}
-)
-
-// Simple Usage
 func main() {
-	if err := gosge.Run(opt, loadGame); err != nil {
-		log.Fatalf("error running the game: %v", err)
+	if err := gosge.Run(opt, game.Load); err != nil {
+		log.Fatal().Err(err).Msg("error running the game")
 	}
-}
-
-func loadGame(eng *gosge.Engine) error {
-	// Preload font
-	if err := eng.LoadFont(fontName); err != nil {
-		return err
-	}
-
-	// get the ECS world
-	world := eng.World()
-
-	// gameScale from the real screen size to our design resolution
-	gameScale := eng.GetScreenSize().CalculateScale(designResolution)
-
-	// add the centered text
-	world.AddEntity(
-		ui.Text{
-			String:     "MESH2PROD",
-			HAlignment: ui.CenterHAlignment,
-			VAlignment: ui.MiddleVAlignment,
-			Font:       fontName,
-			Size:       fontSize * gameScale.Min,
-		},
-		geometry.Point{
-			X: designResolution.Width / 2 * gameScale.Point.X,
-			Y: designResolution.Height / 2 * gameScale.Point.Y,
-		},
-		color.White,
-	)
-	return nil
 }

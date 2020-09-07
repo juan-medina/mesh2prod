@@ -1,10 +1,60 @@
 {
   "frames": [
     {
-      "filename": "gopher_plane_1.png",
+      "filename": "box1.png",
       "frame": {
         "x": 5,
         "y": 5,
+        "w": 600,
+        "h": 349
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 600,
+        "h": 349
+      },
+      "sourceSize": {
+        "w": 600,
+        "h": 349
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "box2.png",
+      "frame": {
+        "x": 5,
+        "y": 364,
+        "w": 600,
+        "h": 349
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 600,
+        "h": 349
+      },
+      "sourceSize": {
+        "w": 600,
+        "h": 349
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "gopher_plane_1.png",
+      "frame": {
+        "x": 5,
+        "y": 723,
         "w": 300,
         "h": 179
       },
@@ -29,7 +79,7 @@
       "filename": "gopher_plane_2.png",
       "frame": {
         "x": 315,
-        "y": 5,
+        "y": 723,
         "w": 300,
         "h": 179
       },
@@ -58,7 +108,7 @@
     "format": "RGBA8888",
     "size": {
       "w": 620,
-      "h": 189
+      "h": 907
     },
     "scale": 1
   }
