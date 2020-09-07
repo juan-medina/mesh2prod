@@ -1,0 +1,9 @@
+language: go
+
+go:
+    - 1.15.x
+
+script: make validate
+
+before_script:
+    - GO111MODULE=off go get -u golang.org/x/lint/golint

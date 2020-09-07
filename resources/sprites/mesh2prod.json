@@ -1,0 +1,65 @@
+{
+  "frames": [
+    {
+      "filename": "gopher_plane_1.png",
+      "frame": {
+        "x": 5,
+        "y": 5,
+        "w": 300,
+        "h": 179
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 300,
+        "h": 179
+      },
+      "sourceSize": {
+        "w": 300,
+        "h": 179
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "gopher_plane_2.png",
+      "frame": {
+        "x": 315,
+        "y": 5,
+        "w": 300,
+        "h": 179
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 300,
+        "h": 179
+      },
+      "sourceSize": {
+        "w": 300,
+        "h": 179
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    }
+  ],
+  "meta": {
+    "app": "http://free-tex-packer.com",
+    "version": "0.6.6",
+    "image": "mesh2prod.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 620,
+      "h": 189
+    },
+    "scale": 1
+  }
+}
