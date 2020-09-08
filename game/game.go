@@ -24,6 +24,10 @@ package game
 
 import (
 	"fmt"
+	"github.com/juan-medina/gosge/components/color"
+	"github.com/juan-medina/gosge/components/effects"
+	"github.com/juan-medina/gosge/components/shapes"
+	"github.com/juan-medina/gosge/components/sprite"
 	"reflect"
 
 	"github.com/juan-medina/goecs"
@@ -39,23 +43,28 @@ const (
 	gopherPlaneAnim = "gopher_plane_%d.png"              // base animation for our gopher
 	planeScale      = float32(0.5)                       // plane scale
 	planeX          = 720                                // plane X position
-	planeSpeed      = 1000                               // plane speed
+	planeSpeed      = 900                                // plane speed
 	animSpeedSlow   = 0.65                               // animation slow speed
 	animSpeedFast   = 1                                  // animation fast speed
 	meshSpriteAnim  = "box%d.png"                        // the mesh sprite
 	meshScale       = 1                                  // mesh scale
 	meshX           = 310                                // mesh scale
-	meshSpeed       = float32(100)                       // mesh speed
+	meshSpeed       = float32(40)                        // mesh speed
 	topMeshSpeed    = meshSpeed * 2                      // top mesh speed
 	music           = "resources/music/loop.ogg"         // our game music
+	bgLayer         = "resources/sprites/layer%d.png"    // bg layers
+	cloudLayers     = 3                                  // number of cloud layers
+	minCloudSpeed   = 200                                // min cloud speed
+	cloudDiffSpeed  = 20                                 // difference of speed per layer
+	parallaxEffect  = 0.010                              // amount of parallax effect
 )
 
 var (
-	// designResolution is how our game is designed
-	designResolution = geometry.Size{Width: 1920, Height: 1080}
-
-	planeEnt *goecs.Entity // our plane
-	meshEnt  *goecs.Entity // our mesh
+	designResolution  = geometry.Size{Width: 1920, Height: 1080} // designResolution is how our game is designed
+	gameScale         geometry.Scale                             // our game scale
+	planeEnt          *goecs.Entity                              // our plane
+	meshEnt           *goecs.Entity                              // our mesh
+	cloudTransparency = color.White.Alpha(245)                   // our cloud transparency
 )
 
 // Load the game
@@ -67,7 +76,7 @@ func Load(eng *gosge.Engine) error {
 	world := eng.World()
 
 	// gameScale from the real screen size to our design resolution
-	gameScale := eng.GetScreenSize().CalculateScale(designResolution)
+	gameScale = eng.GetScreenSize().CalculateScale(designResolution)
 
 	// load the music
 	if err = eng.LoadMusic(music); err != nil {
@@ -77,6 +86,97 @@ func Load(eng *gosge.Engine) error {
 	// load the sprite sheet
 	if err = eng.LoadSpriteSheet(spriteSheet); err != nil {
 		return err
+	}
+
+	// add a gradient background
+	world.AddEntity(
+		shapes.Box{
+			Size: geometry.Size{
+				Width:  designResolution.Width,
+				Height: designResolution.Height,
+			},
+			Scale: gameScale.Min,
+		},
+		geometry.Point{},
+		color.Gradient{
+			From:      color.White,
+			To:        color.SkyBlue,
+			Direction: color.GradientVertical,
+		},
+	)
+
+	// adding the clouds
+	for ln := 1; ln <= cloudLayers; ln++ {
+		// get the file name
+		lf := fmt.Sprintf(bgLayer, ln)
+		speed := -(minCloudSpeed + (cloudDiffSpeed * float32(cloudLayers-ln)))
+		// load the sprite
+		if err := eng.LoadSprite(lf, geometry.Point{X: 0, Y: 0}); err != nil {
+			return err
+		}
+		if size, err = eng.GetSpriteSize("", lf); err != nil {
+			return err
+		}
+		reset := size.Width * gameScale.Point.X
+		// add the first chunk
+		world.AddEntity(
+			sprite.Sprite{
+				Name:  lf,
+				Scale: gameScale.Min,
+			},
+			geometry.Point{},
+			movement{
+				amount: geometry.Point{
+					X: speed,
+					Y: 0,
+				},
+				min: geometry.Point{
+					X: -100000,
+					Y: 0,
+				},
+				max: geometry.Point{
+					X: 100000,
+					Y: 100000,
+				},
+			},
+			parallax{
+				min:   -size.Width * gameScale.Point.X,
+				reset: reset,
+				layer: ln,
+			},
+			cloudTransparency,
+			effects.Layer{Depth: 1 + float32(ln)},
+		)
+		// add the second chunk
+		world.AddEntity(
+			sprite.Sprite{
+				Name:  lf,
+				Scale: gameScale.Min,
+				FlipX: true,
+			},
+			geometry.Point{X: reset},
+			movement{
+				amount: geometry.Point{
+					X: speed,
+					Y: 0,
+				},
+				min: geometry.Point{
+					X: -100000,
+					Y: 0,
+				},
+				max: geometry.Point{
+					X: 100000,
+					Y: 100000,
+				},
+			},
+			parallax{
+				min:   -size.Width * gameScale.Point.X,
+				reset: reset,
+				layer: ln,
+			},
+			cloudTransparency,
+			effects.Layer{Depth: 1 + float32(ln)},
+		)
 	}
 
 	// get the size of the mesh
@@ -107,7 +207,10 @@ func Load(eng *gosge.Engine) error {
 			Y: designResolution.Height / 2 * gameScale.Point.Y,
 		},
 		movement{
-			amount: 100,
+			amount: geometry.Point{
+				X: 0,
+				Y: 100,
+			},
 			min: geometry.Point{
 				X: 0,
 				Y: halveHeight * gameScale.Point.X,
@@ -117,6 +220,7 @@ func Load(eng *gosge.Engine) error {
 				Y: (designResolution.Height - halveHeight) * gameScale.Point.Y,
 			},
 		},
+		effects.Layer{Depth: 0},
 	)
 
 	// get the size of the first sprite for our plane
@@ -147,7 +251,7 @@ func Load(eng *gosge.Engine) error {
 			Y: designResolution.Height / 2 * gameScale.Point.Y,
 		},
 		movement{
-			amount: 0,
+			amount: geometry.Point{},
 			min: geometry.Point{
 				X: 0,
 				Y: halveHeight * gameScale.Point.X,
@@ -157,6 +261,7 @@ func Load(eng *gosge.Engine) error {
 				Y: (designResolution.Height - halveHeight) * gameScale.Point.Y,
 			},
 		},
+		effects.Layer{Depth: 0},
 	)
 
 	// add the keys listener
@@ -167,6 +272,9 @@ func Load(eng *gosge.Engine) error {
 
 	// add the move system
 	world.AddSystem(moveSystem)
+
+	// add the parallaxSystem system
+	world.AddSystem(parallaxSystem)
 
 	// play the music
 	return world.Signal(events.PlayMusicEvent{Name: music})
@@ -184,7 +292,8 @@ func moveSystem(world *goecs.World, delta float32) error {
 		mov := ent.Get(movementType).(movement)
 
 		// increment position and clamp to the min/max
-		pos.Y += mov.amount * delta
+		pos.Y += mov.amount.Y * delta * gameScale.Point.X
+		pos.X += mov.amount.X * delta * gameScale.Point.Y
 		pos.Clamp(mov.min, mov.max)
 
 		// update entity
@@ -208,15 +317,15 @@ func keyMoveListener(_ *goecs.World, signal interface{}, _ float32) error {
 			if e.Status.Pressed {
 				switch e.Key {
 				case device.KeyUp:
-					mov.amount = -planeSpeed
+					mov.amount.Y = -planeSpeed
 				case device.KeyDown:
-					mov.amount = planeSpeed
+					mov.amount.Y = planeSpeed
 				}
 				// now we are animated faster
 				anim.Speed = animSpeedFast
 				// if not set speed to zero
 			} else if e.Status.Released {
-				mov.amount = 0
+				mov.amount.Y = 0
 				// now we are animated slower
 				anim.Speed = animSpeedSlow
 			}
@@ -240,16 +349,16 @@ func followSystem(_ *goecs.World, delta float32) error {
 
 	// increase movement up or down
 	if diffY > 0 {
-		mov.amount += meshSpeed * delta
+		mov.amount.Y += meshSpeed * delta
 	} else {
-		mov.amount += -meshSpeed * delta
+		mov.amount.Y += -meshSpeed * delta
 	}
 
 	// clamp speed
-	if mov.amount > topMeshSpeed {
-		mov.amount = topMeshSpeed
-	} else if mov.amount < -topMeshSpeed {
-		mov.amount = -topMeshSpeed
+	if mov.amount.Y > topMeshSpeed {
+		mov.amount.Y = topMeshSpeed
+	} else if mov.amount.Y < -topMeshSpeed {
+		mov.amount.Y = -topMeshSpeed
 	}
 
 	// update the mesh movement
@@ -258,11 +367,45 @@ func followSystem(_ *goecs.World, delta float32) error {
 	return nil
 }
 
+func parallaxSystem(world *goecs.World, _ float32) error {
+	// get our entities that has position and parallax
+	for it := world.Iterator(geometry.TYPE.Point, parallaxType); it != nil; it = it.Next() {
+		// get the entity
+		ent := it.Value()
+
+		// get current position and movement
+		pos := geometry.Get.Point(ent)
+		par := ent.Get(parallaxType).(parallax)
+
+		// if we are at our mine reset
+		if pos.X < par.min {
+			pos.X = par.reset
+		}
+
+		planePos := geometry.Get.Point(planeEnt)
+
+		shift := ((designResolution.Height / 2 * gameScale.Point.Y) - planePos.Y) * parallaxEffect * gameScale.Min
+
+		pos.Y = shift * float32(cloudLayers-par.layer+1)
+
+		ent.Set(pos)
+	}
+	return nil
+}
+
 // indicate how much we need to move
 type movement struct {
-	amount float32        // how much we could move
+	amount geometry.Point // how much we could move
 	min    geometry.Point // min position that we could move
 	max    geometry.Point // max position that we could move
 }
 
 var movementType = reflect.TypeOf(movement{})
+
+type parallax struct {
+	min   float32
+	reset float32
+	layer int
+}
+
+var parallaxType = reflect.TypeOf(parallax{})
