@@ -88,6 +88,8 @@ func (ps *planeSystem) load(eng *gosge.Engine) error {
 		},
 		movement.Movement{
 			Amount: geometry.Point{},
+		},
+		movement.Constrain{
 			Min: geometry.Point{
 				X: 0,
 				Y: halveHeight * ps.gs.Point.X,

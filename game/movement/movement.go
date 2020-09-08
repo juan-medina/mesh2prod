@@ -47,7 +47,13 @@ func (ms movementSystem) system(world *goecs.World, delta float32) error {
 		// increment position and clamp to the Min/Max
 		pos.Y += mov.Amount.Y * delta * ms.gs.Point.X
 		pos.X += mov.Amount.X * delta * ms.gs.Point.Y
-		pos.Clamp(mov.Min, mov.Max)
+
+		// if we have constrains
+		if ent.Contains(ConstrainType) {
+			// clamp to them
+			constrain := ent.Get(ConstrainType).(Constrain)
+			pos.Clamp(constrain.Min, constrain.Max)
+		}
 
 		// update entity
 		ent.Set(pos)
@@ -56,11 +62,18 @@ func (ms movementSystem) system(world *goecs.World, delta float32) error {
 	return nil
 }
 
+// Constrain of the movement
+type Constrain struct {
+	Min geometry.Point // Min position that we could move
+	Max geometry.Point // Max position that we could move
+}
+
+// ConstrainType is the reflect.Type of Movement
+var ConstrainType = reflect.TypeOf(Constrain{})
+
 // Movement indicate how much we need to move
 type Movement struct {
 	Amount geometry.Point // Amount that we could move
-	Min    geometry.Point // Min position that we could move
-	Max    geometry.Point // Max position that we could move
 }
 
 // Type is the reflect.Type of Movement

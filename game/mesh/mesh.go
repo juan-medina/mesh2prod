@@ -90,6 +90,8 @@ func (ms *meshSystem) load(eng *gosge.Engine) error {
 				X: 0,
 				Y: 100,
 			},
+		},
+		movement.Constrain{
 			Min: geometry.Point{
 				X: 0,
 				Y: halveHeight * ms.gs.Point.X,

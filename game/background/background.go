@@ -105,14 +105,6 @@ func (bs bgSystem) load(eng *gosge.Engine) error {
 					X: speed,
 					Y: 0,
 				},
-				Min: geometry.Point{
-					X: -100000,
-					Y: -100000,
-				},
-				Max: geometry.Point{
-					X: 100000,
-					Y: 100000,
-				},
 			},
 			parallax{
 				min:   -size.Width * bs.gs.Point.X,
@@ -134,14 +126,6 @@ func (bs bgSystem) load(eng *gosge.Engine) error {
 				Amount: geometry.Point{
 					X: speed,
 					Y: 0,
-				},
-				Min: geometry.Point{
-					X: -100000,
-					Y: -100000,
-				},
-				Max: geometry.Point{
-					X: 100000,
-					Y: 100000,
 				},
 			},
 			parallax{
