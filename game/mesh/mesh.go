@@ -30,6 +30,7 @@ import (
 	"github.com/juan-medina/gosge/components/effects"
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/mesh2prod/game/movement"
+	"github.com/juan-medina/mesh2prod/game/plane"
 )
 
 const (
@@ -43,10 +44,10 @@ const (
 )
 
 type meshSystem struct {
-	gs    geometry.Scale
-	dr    geometry.Size
-	plane *goecs.Entity
-	mesh  *goecs.Entity
+	gs       geometry.Scale
+	dr       geometry.Size
+	mesh     *goecs.Entity
+	planePos geometry.Point
 }
 
 // add the background
@@ -104,20 +105,20 @@ func (ms *meshSystem) load(eng *gosge.Engine) error {
 	// add the follow system
 	world.AddSystem(ms.followSystem)
 
+	// listen to plane changes
+	world.AddListener(ms.planeChanges)
+
 	return nil
 }
 
 // follow system
-func (ms meshSystem) followSystem(_ *goecs.World, delta float32) error {
-	// get plane components
-	planePos := geometry.Get.Point(ms.plane)
-
+func (ms *meshSystem) followSystem(_ *goecs.World, delta float32) error {
 	// get mesh component
 	meshPos := geometry.Get.Point(ms.mesh)
 	mov := ms.mesh.Get(movement.Type).(movement.Movement)
 
 	// calculate difference
-	diffY := planePos.Y - meshPos.Y
+	diffY := ms.planePos.Y - meshPos.Y
 
 	// increase Movement up or down
 	if diffY > 0 {
@@ -139,12 +140,20 @@ func (ms meshSystem) followSystem(_ *goecs.World, delta float32) error {
 	return nil
 }
 
+// when plane changes save it position
+func (ms *meshSystem) planeChanges(_ *goecs.World, signal interface{}, _ float32) error {
+	switch e := signal.(type) {
+	case plane.PositionChangeEvent:
+		ms.planePos = e.Pos
+	}
+	return nil
+}
+
 // System creates the mesh system
-func System(engine *gosge.Engine, gs geometry.Scale, dr geometry.Size, plane *goecs.Entity) error {
+func System(engine *gosge.Engine, gs geometry.Scale, dr geometry.Size) error {
 	bs := meshSystem{
-		gs:    gs,
-		dr:    dr,
-		plane: plane,
+		gs: gs,
+		dr: dr,
 	}
 	return bs.load(engine)
 }

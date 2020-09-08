@@ -32,6 +32,7 @@ import (
 	"github.com/juan-medina/gosge/components/shapes"
 	"github.com/juan-medina/gosge/components/sprite"
 	"github.com/juan-medina/mesh2prod/game/movement"
+	"github.com/juan-medina/mesh2prod/game/plane"
 	"reflect"
 )
 
@@ -48,9 +49,8 @@ var (
 )
 
 type bgSystem struct {
-	gs    geometry.Scale
-	dr    geometry.Size
-	plane *goecs.Entity
+	gs geometry.Scale
+	dr geometry.Size
 }
 
 // add the background
@@ -152,13 +152,17 @@ func (bs bgSystem) load(eng *gosge.Engine) error {
 		)
 	}
 
-	// add the parallaxSystem system
-	world.AddSystem(bs.parallaxSystem)
+	// add the reset system
+	world.AddSystem(bs.resetSystem)
+
+	// listen to plane changes
+	world.AddListener(bs.planeChanges)
 
 	return nil
 }
 
-func (bs bgSystem) parallaxSystem(world *goecs.World, _ float32) error {
+// reset the layer if go off screen
+func (bs *bgSystem) resetSystem(world *goecs.World, _ float32) error {
 	// get our entities that has position and parallax
 	for it := world.Iterator(geometry.TYPE.Point, parallaxType); it != nil; it = it.Next() {
 		// get the entity
@@ -168,18 +172,37 @@ func (bs bgSystem) parallaxSystem(world *goecs.World, _ float32) error {
 		pos := geometry.Get.Point(ent)
 		par := ent.Get(parallaxType).(parallax)
 
-		// if we are at our mine reset
+		// if we are at our min reset
 		if pos.X < par.min {
 			pos.X = par.reset
+			ent.Set(pos)
 		}
+	}
+	return nil
+}
 
-		planePos := geometry.Get.Point(bs.plane)
+// when plane changes position move the layers up or down a bit
+func (bs *bgSystem) planeChanges(world *goecs.World, signal interface{}, _ float32) error {
+	switch e := signal.(type) {
+	case plane.PositionChangeEvent:
+		// calculate a shift from the plane position
+		shift := ((bs.dr.Height / 2 * bs.gs.Point.Y) - e.Pos.Y) * parallaxEffect * bs.gs.Min
 
-		shift := ((bs.dr.Height / 2 * bs.gs.Point.Y) - planePos.Y) * parallaxEffect * bs.gs.Min
+		// get our entities that has position and parallax
+		for it := world.Iterator(geometry.TYPE.Point, parallaxType); it != nil; it = it.Next() {
+			// get the entity
+			ent := it.Value()
 
-		pos.Y = shift * float32(cloudLayers-par.layer+1)
+			// get current position and movement
+			pos := geometry.Get.Point(ent)
+			par := ent.Get(parallaxType).(parallax)
 
-		ent.Set(pos)
+			// update the position
+			pos.Y = shift * float32(cloudLayers-par.layer+1)
+
+			// update entity
+			ent.Set(pos)
+		}
 	}
 	return nil
 }
@@ -193,11 +216,10 @@ type parallax struct {
 var parallaxType = reflect.TypeOf(parallax{})
 
 // System creates the background system
-func System(engine *gosge.Engine, gs geometry.Scale, dr geometry.Size, plane *goecs.Entity) error {
+func System(engine *gosge.Engine, gs geometry.Scale, dr geometry.Size) error {
 	bs := bgSystem{
-		gs:    gs,
-		dr:    dr,
-		plane: plane,
+		gs: gs,
+		dr: dr,
 	}
 	return bs.load(engine)
 }

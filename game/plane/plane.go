@@ -45,9 +45,10 @@ const (
 )
 
 type planeSystem struct {
-	gs    geometry.Scale
-	dr    geometry.Size
-	plane *goecs.Entity
+	gs      geometry.Scale
+	dr      geometry.Size
+	plane   *goecs.Entity
+	lastPos geometry.Point
 }
 
 // add the background
@@ -102,6 +103,9 @@ func (ps *planeSystem) load(eng *gosge.Engine) error {
 	// add the keys listener
 	world.AddListener(ps.keyMoveListener)
 
+	// add system to notify the world of position changes
+	world.AddSystem(ps.notifyPositionChanges)
+
 	return nil
 }
 
@@ -139,16 +143,29 @@ func (ps planeSystem) keyMoveListener(_ *goecs.World, signal interface{}, _ floa
 	return nil
 }
 
+func (ps *planeSystem) notifyPositionChanges(world *goecs.World, _ float32) error {
+	current := geometry.Get.Point(ps.plane)
+
+	if current.X != ps.lastPos.X || current.Y != ps.lastPos.Y {
+		ps.lastPos = current
+		return world.Signal(PositionChangeEvent{Pos: current})
+	}
+
+	return nil
+}
+
 // System create a plane system
-func System(engine *gosge.Engine, gs geometry.Scale, dr geometry.Size) (*goecs.Entity, error) {
+func System(engine *gosge.Engine, gs geometry.Scale, dr geometry.Size) error {
 	ps := planeSystem{
 		gs:    gs,
 		dr:    dr,
 		plane: nil,
 	}
 
-	if err := ps.load(engine); err != nil {
-		return nil, err
-	}
-	return ps.plane, nil
+	return ps.load(engine)
+}
+
+// PositionChangeEvent notify others that the plane has change position
+type PositionChangeEvent struct {
+	Pos geometry.Point
 }

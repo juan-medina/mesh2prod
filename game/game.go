@@ -23,7 +23,6 @@
 package game
 
 import (
-	"github.com/juan-medina/goecs"
 	"github.com/juan-medina/gosge"
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/events"
@@ -68,18 +67,17 @@ func Load(eng *gosge.Engine) error {
 	}
 
 	// add the plane
-	var planeEnt *goecs.Entity
-	if planeEnt, err = plane.System(eng, gameScale, designResolution); err != nil {
+	if err = plane.System(eng, gameScale, designResolution); err != nil {
 		return err
 	}
 
 	// add the background system
-	if err = background.System(eng, gameScale, designResolution, planeEnt); err != nil {
+	if err = background.System(eng, gameScale, designResolution); err != nil {
 		return err
 	}
 
 	// add the mesh
-	if err = mesh.System(eng, gameScale, designResolution, planeEnt); err != nil {
+	if err = mesh.System(eng, gameScale, designResolution); err != nil {
 		return err
 	}
 
