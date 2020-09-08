@@ -38,10 +38,10 @@ import (
 
 const (
 	bgLayer        = "resources/sprites/layer%d.png" // bg layers
-	cloudLayers    = 3                               // number of cloud layers
+	cloudLayers    = 6                               // number of cloud layers
 	minCloudSpeed  = 200                             // min cloud speed
-	cloudDiffSpeed = 20                              // difference of speed per layer
-	parallaxEffect = 0.010                           // amount of parallax effect
+	cloudDiffSpeed = 40                              // difference of speed per layer
+	parallaxEffect = 0.025                           // amount of parallax effect
 )
 
 var (
@@ -78,10 +78,11 @@ func (bs bgSystem) load(eng *gosge.Engine) error {
 		},
 	)
 
+	flip := false
 	// adding the clouds
-	for ln := 1; ln <= cloudLayers; ln++ {
+	for ln := 0; ln < cloudLayers; ln++ {
 		// get the file name
-		lf := fmt.Sprintf(bgLayer, ln)
+		lf := fmt.Sprintf(bgLayer, (ln>>1)+1)
 		speed := -(minCloudSpeed + (cloudDiffSpeed * float32(cloudLayers-ln)))
 		// load the sprite
 		if err := eng.LoadSprite(lf, geometry.Point{X: 0, Y: 0}); err != nil {
@@ -96,6 +97,7 @@ func (bs bgSystem) load(eng *gosge.Engine) error {
 			sprite.Sprite{
 				Name:  lf,
 				Scale: bs.gs.Min,
+				FlipX: flip,
 			},
 			geometry.Point{},
 			movement.Movement{
@@ -105,7 +107,7 @@ func (bs bgSystem) load(eng *gosge.Engine) error {
 				},
 				Min: geometry.Point{
 					X: -100000,
-					Y: 0,
+					Y: -100000,
 				},
 				Max: geometry.Point{
 					X: 100000,
@@ -125,7 +127,7 @@ func (bs bgSystem) load(eng *gosge.Engine) error {
 			sprite.Sprite{
 				Name:  lf,
 				Scale: bs.gs.Min,
-				FlipX: true,
+				FlipX: !flip,
 			},
 			geometry.Point{X: reset},
 			movement.Movement{
@@ -135,7 +137,7 @@ func (bs bgSystem) load(eng *gosge.Engine) error {
 				},
 				Min: geometry.Point{
 					X: -100000,
-					Y: 0,
+					Y: -100000,
 				},
 				Max: geometry.Point{
 					X: 100000,
@@ -150,6 +152,7 @@ func (bs bgSystem) load(eng *gosge.Engine) error {
 			cloudTransparency,
 			effects.Layer{Depth: 1 + float32(ln)},
 		)
+		flip = !flip
 	}
 
 	// add the reset system
@@ -181,12 +184,18 @@ func (bs *bgSystem) resetSystem(world *goecs.World, _ float32) error {
 	return nil
 }
 
+//    0
+//
+//         300
+//
+//    600
+
 // when plane changes position move the layers up or down a bit
 func (bs *bgSystem) planeChanges(world *goecs.World, signal interface{}, _ float32) error {
 	switch e := signal.(type) {
 	case plane.PositionChangeEvent:
 		// calculate a shift from the plane position
-		shift := ((bs.dr.Height / 2 * bs.gs.Point.Y) - e.Pos.Y) * parallaxEffect * bs.gs.Min
+		shift := (e.Pos.Y - (bs.dr.Height / 2 * bs.gs.Point.Y)) * parallaxEffect
 
 		// get our entities that has position and parallax
 		for it := world.Iterator(geometry.TYPE.Point, parallaxType); it != nil; it = it.Next() {
