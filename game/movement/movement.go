@@ -20,29 +20,34 @@
  *  THE SOFTWARE.
  */
 
-package game
+package movement
 
 import (
 	"github.com/juan-medina/goecs"
+	"github.com/juan-medina/gosge"
 	"github.com/juan-medina/gosge/components/geometry"
 	"reflect"
 )
 
+type movementSystem struct {
+	gs geometry.Scale
+}
+
 // move system
-func moveSystem(world *goecs.World, delta float32) error {
-	// move anything that has a position and movement
-	for it := world.Iterator(geometry.TYPE.Point, movementType); it != nil; it = it.Next() {
+func (ms movementSystem) system(world *goecs.World, delta float32) error {
+	// move anything that has a position and Movement
+	for it := world.Iterator(geometry.TYPE.Point, Type); it != nil; it = it.Next() {
 		// get the entity
 		ent := it.Value()
 
-		// get current position and movement
+		// get current position and Movement
 		pos := geometry.Get.Point(ent)
-		mov := ent.Get(movementType).(movement)
+		mov := ent.Get(Type).(Movement)
 
-		// increment position and clamp to the min/max
-		pos.Y += mov.amount.Y * delta * gameScale.Point.X
-		pos.X += mov.amount.X * delta * gameScale.Point.Y
-		pos.Clamp(mov.min, mov.max)
+		// increment position and clamp to the Min/Max
+		pos.Y += mov.Amount.Y * delta * ms.gs.Point.X
+		pos.X += mov.Amount.X * delta * ms.gs.Point.Y
+		pos.Clamp(mov.Min, mov.Max)
 
 		// update entity
 		ent.Set(pos)
@@ -51,11 +56,23 @@ func moveSystem(world *goecs.World, delta float32) error {
 	return nil
 }
 
-// indicate how much we need to move
-type movement struct {
-	amount geometry.Point // how much we could move
-	min    geometry.Point // min position that we could move
-	max    geometry.Point // max position that we could move
+// Movement indicate how much we need to move
+type Movement struct {
+	Amount geometry.Point // Amount that we could move
+	Min    geometry.Point // Min position that we could move
+	Max    geometry.Point // Max position that we could move
 }
 
-var movementType = reflect.TypeOf(movement{})
+// Type is the reflect.Type of Movement
+var Type = reflect.TypeOf(Movement{})
+
+// System Create the Movement system
+func System(engine *gosge.Engine, gs geometry.Scale) error {
+	ms := movementSystem{
+		gs: gs,
+	}
+
+	engine.World().AddSystem(ms.system)
+
+	return nil
+}

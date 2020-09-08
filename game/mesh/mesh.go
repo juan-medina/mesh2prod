@@ -20,7 +20,7 @@
  *  THE SOFTWARE.
  */
 
-package game
+package mesh
 
 import (
 	"fmt"
@@ -29,10 +29,28 @@ import (
 	"github.com/juan-medina/gosge/components/animation"
 	"github.com/juan-medina/gosge/components/effects"
 	"github.com/juan-medina/gosge/components/geometry"
+	"github.com/juan-medina/mesh2prod/game/movement"
 )
 
+const (
+	spriteSheet    = "resources/sprites/mesh2prod.json" // game sprite sheet
+	animSpeedSlow  = 0.65                               // animation slow speed
+	meshSpriteAnim = "box%d.png"                        // the mesh sprite
+	meshScale      = 1                                  // mesh scale
+	meshX          = 310                                // mesh scale
+	meshSpeed      = float32(40)                        // mesh speed
+	topMeshSpeed   = meshSpeed * 2                      // top mesh speed
+)
+
+type meshSystem struct {
+	gs    geometry.Scale
+	dr    geometry.Size
+	plane *goecs.Entity
+	mesh  *goecs.Entity
+}
+
 // add the background
-func addMesh(eng *gosge.Engine) error {
+func (ms *meshSystem) load(eng *gosge.Engine) error {
 	var err error
 	var size geometry.Size
 
@@ -48,13 +66,13 @@ func addMesh(eng *gosge.Engine) error {
 	halveHeight := (size.Height / 2) * meshScale
 
 	// add the mesh
-	meshEnt = world.AddEntity(
+	ms.mesh = world.AddEntity(
 		animation.Animation{
 			Sequences: map[string]animation.Sequence{
 				"flying": {
 					Sheet:  spriteSheet,
 					Base:   meshSpriteAnim,
-					Scale:  gameScale.Min * meshScale,
+					Scale:  ms.gs.Min * meshScale,
 					Frames: 2,
 					Delay:  0.065,
 				},
@@ -63,58 +81,70 @@ func addMesh(eng *gosge.Engine) error {
 			Speed:   animSpeedSlow,
 		},
 		geometry.Point{
-			X: meshX * gameScale.Point.X,
-			Y: designResolution.Height / 2 * gameScale.Point.Y,
+			X: meshX * ms.gs.Point.X,
+			Y: ms.dr.Height / 2 * ms.gs.Point.Y,
 		},
-		movement{
-			amount: geometry.Point{
+		movement.Movement{
+			Amount: geometry.Point{
 				X: 0,
 				Y: 100,
 			},
-			min: geometry.Point{
+			Min: geometry.Point{
 				X: 0,
-				Y: halveHeight * gameScale.Point.X,
+				Y: halveHeight * ms.gs.Point.X,
 			},
-			max: geometry.Point{
-				X: designResolution.Width * gameScale.Point.X,
-				Y: (designResolution.Height - halveHeight) * gameScale.Point.Y,
+			Max: geometry.Point{
+				X: ms.dr.Width * ms.gs.Point.X,
+				Y: (ms.dr.Height - halveHeight) * ms.gs.Point.Y,
 			},
 		},
 		effects.Layer{Depth: 0},
 	)
 
 	// add the follow system
-	world.AddSystem(followSystem)
+	world.AddSystem(ms.followSystem)
 
 	return nil
 }
 
 // follow system
-func followSystem(_ *goecs.World, delta float32) error {
-	// get components
-	planePos := geometry.Get.Point(planeEnt)
-	meshPos := geometry.Get.Point(meshEnt)
-	mov := meshEnt.Get(movementType).(movement)
+func (ms meshSystem) followSystem(_ *goecs.World, delta float32) error {
+	// get plane components
+	planePos := geometry.Get.Point(ms.plane)
+
+	// get mesh component
+	meshPos := geometry.Get.Point(ms.mesh)
+	mov := ms.mesh.Get(movement.Type).(movement.Movement)
 
 	// calculate difference
 	diffY := planePos.Y - meshPos.Y
 
-	// increase movement up or down
+	// increase Movement up or down
 	if diffY > 0 {
-		mov.amount.Y += meshSpeed * delta
+		mov.Amount.Y += meshSpeed * delta
 	} else {
-		mov.amount.Y += -meshSpeed * delta
+		mov.Amount.Y += -meshSpeed * delta
 	}
 
 	// clamp speed
-	if mov.amount.Y > topMeshSpeed {
-		mov.amount.Y = topMeshSpeed
-	} else if mov.amount.Y < -topMeshSpeed {
-		mov.amount.Y = -topMeshSpeed
+	if mov.Amount.Y > topMeshSpeed {
+		mov.Amount.Y = topMeshSpeed
+	} else if mov.Amount.Y < -topMeshSpeed {
+		mov.Amount.Y = -topMeshSpeed
 	}
 
-	// update the mesh movement
-	meshEnt.Set(mov)
+	// update the mesh Movement
+	ms.mesh.Set(mov)
 
 	return nil
+}
+
+// System creates the mesh system
+func System(engine *gosge.Engine, gs geometry.Scale, dr geometry.Size, plane *goecs.Entity) error {
+	bs := meshSystem{
+		gs:    gs,
+		dr:    dr,
+		plane: plane,
+	}
+	return bs.load(engine)
 }

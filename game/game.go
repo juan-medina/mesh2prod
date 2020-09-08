@@ -25,38 +25,21 @@ package game
 import (
 	"github.com/juan-medina/goecs"
 	"github.com/juan-medina/gosge"
-	"github.com/juan-medina/gosge/components/color"
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/events"
+	"github.com/juan-medina/mesh2prod/game/background"
+	"github.com/juan-medina/mesh2prod/game/mesh"
+	"github.com/juan-medina/mesh2prod/game/movement"
+	"github.com/juan-medina/mesh2prod/game/plane"
 )
 
 const (
-	spriteSheet     = "resources/sprites/mesh2prod.json" // game sprite sheet
-	gopherPlaneAnim = "gopher_plane_%d.png"              // base animation for our gopher
-	planeScale      = float32(0.5)                       // plane scale
-	planeX          = 720                                // plane X position
-	planeSpeed      = 900                                // plane speed
-	animSpeedSlow   = 0.65                               // animation slow speed
-	animSpeedFast   = 1                                  // animation fast speed
-	meshSpriteAnim  = "box%d.png"                        // the mesh sprite
-	meshScale       = 1                                  // mesh scale
-	meshX           = 310                                // mesh scale
-	meshSpeed       = float32(40)                        // mesh speed
-	topMeshSpeed    = meshSpeed * 2                      // top mesh speed
-	music           = "resources/music/loop.ogg"         // our game music
-	bgLayer         = "resources/sprites/layer%d.png"    // bg layers
-	cloudLayers     = 3                                  // number of cloud layers
-	minCloudSpeed   = 200                                // min cloud speed
-	cloudDiffSpeed  = 20                                 // difference of speed per layer
-	parallaxEffect  = 0.010                              // amount of parallax effect
+	spriteSheet = "resources/sprites/mesh2prod.json" // game sprite sheet
+	music       = "resources/music/loop.ogg"         // our game music
 )
 
 var (
-	designResolution  = geometry.Size{Width: 1920, Height: 1080} // designResolution is how our game is designed
-	gameScale         geometry.Scale                             // our game scale
-	planeEnt          *goecs.Entity                              // our plane
-	meshEnt           *goecs.Entity                              // our mesh
-	cloudTransparency = color.White.Alpha(245)                   // our cloud transparency
+	designResolution = geometry.Size{Width: 1920, Height: 1080} // designResolution is how our game is designed
 )
 
 // Load the game
@@ -67,7 +50,7 @@ func Load(eng *gosge.Engine) error {
 	world := eng.World()
 
 	// gameScale from the real screen size to our design resolution
-	gameScale = eng.GetScreenSize().CalculateScale(designResolution)
+	gameScale := eng.GetScreenSize().CalculateScale(designResolution)
 
 	// load the music
 	if err = eng.LoadMusic(music); err != nil {
@@ -79,23 +62,26 @@ func Load(eng *gosge.Engine) error {
 		return err
 	}
 
-	// add the background
-	if err = addBackground(eng); err != nil {
-		return err
-	}
-
-	// add the mesh
-	if err = addMesh(eng); err != nil {
+	// add movement system
+	if err = movement.System(eng, gameScale); err != nil {
 		return err
 	}
 
 	// add the plane
-	if err = addPlane(eng); err != nil {
+	var planeEnt *goecs.Entity
+	if planeEnt, err = plane.System(eng, gameScale, designResolution); err != nil {
 		return err
 	}
 
-	// add the move system
-	world.AddSystem(moveSystem)
+	// add the background system
+	if err = background.System(eng, gameScale, designResolution, planeEnt); err != nil {
+		return err
+	}
+
+	// add the mesh
+	if err = mesh.System(eng, gameScale, designResolution, planeEnt); err != nil {
+		return err
+	}
 
 	// play the music
 	return world.Signal(events.PlayMusicEvent{Name: music})

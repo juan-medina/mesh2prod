@@ -20,7 +20,7 @@
  *  THE SOFTWARE.
  */
 
-package game
+package background
 
 import (
 	"fmt"
@@ -31,11 +31,30 @@ import (
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/components/shapes"
 	"github.com/juan-medina/gosge/components/sprite"
+	"github.com/juan-medina/mesh2prod/game/movement"
 	"reflect"
 )
 
+const (
+	bgLayer        = "resources/sprites/layer%d.png" // bg layers
+	cloudLayers    = 3                               // number of cloud layers
+	minCloudSpeed  = 200                             // min cloud speed
+	cloudDiffSpeed = 20                              // difference of speed per layer
+	parallaxEffect = 0.010                           // amount of parallax effect
+)
+
+var (
+	cloudTransparency = color.White.Alpha(245) // our cloud transparency
+)
+
+type bgSystem struct {
+	gs    geometry.Scale
+	dr    geometry.Size
+	plane *goecs.Entity
+}
+
 // add the background
-func addBackground(eng *gosge.Engine) error {
+func (bs bgSystem) load(eng *gosge.Engine) error {
 	var err error
 	var size geometry.Size
 
@@ -46,10 +65,10 @@ func addBackground(eng *gosge.Engine) error {
 	world.AddEntity(
 		shapes.Box{
 			Size: geometry.Size{
-				Width:  designResolution.Width,
-				Height: designResolution.Height,
+				Width:  bs.dr.Width,
+				Height: bs.dr.Height,
 			},
-			Scale: gameScale.Min,
+			Scale: bs.gs.Min,
 		},
 		geometry.Point{},
 		color.Gradient{
@@ -71,30 +90,30 @@ func addBackground(eng *gosge.Engine) error {
 		if size, err = eng.GetSpriteSize("", lf); err != nil {
 			return err
 		}
-		reset := size.Width * gameScale.Point.X
+		reset := size.Width * bs.gs.Point.X
 		// add the first chunk
 		world.AddEntity(
 			sprite.Sprite{
 				Name:  lf,
-				Scale: gameScale.Min,
+				Scale: bs.gs.Min,
 			},
 			geometry.Point{},
-			movement{
-				amount: geometry.Point{
+			movement.Movement{
+				Amount: geometry.Point{
 					X: speed,
 					Y: 0,
 				},
-				min: geometry.Point{
+				Min: geometry.Point{
 					X: -100000,
 					Y: 0,
 				},
-				max: geometry.Point{
+				Max: geometry.Point{
 					X: 100000,
 					Y: 100000,
 				},
 			},
 			parallax{
-				min:   -size.Width * gameScale.Point.X,
+				min:   -size.Width * bs.gs.Point.X,
 				reset: reset,
 				layer: ln,
 			},
@@ -105,26 +124,26 @@ func addBackground(eng *gosge.Engine) error {
 		world.AddEntity(
 			sprite.Sprite{
 				Name:  lf,
-				Scale: gameScale.Min,
+				Scale: bs.gs.Min,
 				FlipX: true,
 			},
 			geometry.Point{X: reset},
-			movement{
-				amount: geometry.Point{
+			movement.Movement{
+				Amount: geometry.Point{
 					X: speed,
 					Y: 0,
 				},
-				min: geometry.Point{
+				Min: geometry.Point{
 					X: -100000,
 					Y: 0,
 				},
-				max: geometry.Point{
+				Max: geometry.Point{
 					X: 100000,
 					Y: 100000,
 				},
 			},
 			parallax{
-				min:   -size.Width * gameScale.Point.X,
+				min:   -size.Width * bs.gs.Point.X,
 				reset: reset,
 				layer: ln,
 			},
@@ -134,12 +153,12 @@ func addBackground(eng *gosge.Engine) error {
 	}
 
 	// add the parallaxSystem system
-	world.AddSystem(parallaxSystem)
+	world.AddSystem(bs.parallaxSystem)
 
 	return nil
 }
 
-func parallaxSystem(world *goecs.World, _ float32) error {
+func (bs bgSystem) parallaxSystem(world *goecs.World, _ float32) error {
 	// get our entities that has position and parallax
 	for it := world.Iterator(geometry.TYPE.Point, parallaxType); it != nil; it = it.Next() {
 		// get the entity
@@ -154,9 +173,9 @@ func parallaxSystem(world *goecs.World, _ float32) error {
 			pos.X = par.reset
 		}
 
-		planePos := geometry.Get.Point(planeEnt)
+		planePos := geometry.Get.Point(bs.plane)
 
-		shift := ((designResolution.Height / 2 * gameScale.Point.Y) - planePos.Y) * parallaxEffect * gameScale.Min
+		shift := ((bs.dr.Height / 2 * bs.gs.Point.Y) - planePos.Y) * parallaxEffect * bs.gs.Min
 
 		pos.Y = shift * float32(cloudLayers-par.layer+1)
 
@@ -172,3 +191,13 @@ type parallax struct {
 }
 
 var parallaxType = reflect.TypeOf(parallax{})
+
+// System creates the background system
+func System(engine *gosge.Engine, gs geometry.Scale, dr geometry.Size, plane *goecs.Entity) error {
+	bs := bgSystem{
+		gs:    gs,
+		dr:    dr,
+		plane: plane,
+	}
+	return bs.load(engine)
+}

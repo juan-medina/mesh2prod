@@ -20,7 +20,7 @@
  *  THE SOFTWARE.
  */
 
-package game
+package plane
 
 import (
 	"fmt"
@@ -31,10 +31,27 @@ import (
 	"github.com/juan-medina/gosge/components/effects"
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/events"
+	"github.com/juan-medina/mesh2prod/game/movement"
 )
 
+const (
+	spriteSheet     = "resources/sprites/mesh2prod.json" // game sprite sheet
+	gopherPlaneAnim = "gopher_plane_%d.png"              // base animation for our gopher
+	planeScale      = float32(0.5)                       // plane scale
+	planeX          = 720                                // plane X position
+	planeSpeed      = 900                                // plane speed
+	animSpeedSlow   = 0.65                               // animation slow speed
+	animSpeedFast   = 1                                  // animation fast speed
+)
+
+type planeSystem struct {
+	gs    geometry.Scale
+	dr    geometry.Size
+	plane *goecs.Entity
+}
+
 // add the background
-func addPlane(eng *gosge.Engine) error {
+func (ps *planeSystem) load(eng *gosge.Engine) error {
 	var err error
 	var size geometry.Size
 
@@ -50,13 +67,13 @@ func addPlane(eng *gosge.Engine) error {
 	halveHeight := (size.Height / 2) * planeScale
 
 	// add our plane
-	planeEnt = world.AddEntity(
+	ps.plane = world.AddEntity(
 		animation.Animation{
 			Sequences: map[string]animation.Sequence{
 				"flying": {
 					Sheet:  spriteSheet,
 					Base:   gopherPlaneAnim,
-					Scale:  gameScale.Min * planeScale,
+					Scale:  ps.gs.Min * planeScale,
 					Frames: 2,
 					Delay:  0.065,
 				},
@@ -65,59 +82,73 @@ func addPlane(eng *gosge.Engine) error {
 			Speed:   animSpeedSlow,
 		},
 		geometry.Point{
-			X: planeX * gameScale.Point.X,
-			Y: designResolution.Height / 2 * gameScale.Point.Y,
+			X: planeX * ps.gs.Point.X,
+			Y: ps.dr.Height / 2 * ps.gs.Point.Y,
 		},
-		movement{
-			amount: geometry.Point{},
-			min: geometry.Point{
+		movement.Movement{
+			Amount: geometry.Point{},
+			Min: geometry.Point{
 				X: 0,
-				Y: halveHeight * gameScale.Point.X,
+				Y: halveHeight * ps.gs.Point.X,
 			},
-			max: geometry.Point{
-				X: designResolution.Width * gameScale.Point.X,
-				Y: (designResolution.Height - halveHeight) * gameScale.Point.Y,
+			Max: geometry.Point{
+				X: ps.dr.Width * ps.gs.Point.X,
+				Y: (ps.dr.Height - halveHeight) * ps.gs.Point.Y,
 			},
 		},
 		effects.Layer{Depth: 0},
 	)
 
 	// add the keys listener
-	world.AddListener(keyMoveListener)
+	world.AddListener(ps.keyMoveListener)
 
 	return nil
 }
 
-func keyMoveListener(_ *goecs.World, signal interface{}, _ float32) error {
+func (ps planeSystem) keyMoveListener(_ *goecs.World, signal interface{}, _ float32) error {
 	switch e := signal.(type) {
 	// if we got a key event
 	case events.KeyEvent:
 		// if we have use the cursor up or down
 		if e.Key == device.KeyUp || e.Key == device.KeyDown {
-			// get the movement and animation components
-			mov := planeEnt.Get(movementType).(movement)
-			anim := animation.Get.Animation(planeEnt)
+			// get the Movement and animation components
+			mov := ps.plane.Get(movement.Type).(movement.Movement)
+			anim := animation.Get.Animation(ps.plane)
 
 			// if we have press the key calculate the speed
 			if e.Status.Pressed {
 				switch e.Key {
 				case device.KeyUp:
-					mov.amount.Y = -planeSpeed
+					mov.Amount.Y = -planeSpeed
 				case device.KeyDown:
-					mov.amount.Y = planeSpeed
+					mov.Amount.Y = planeSpeed
 				}
 				// now we are animated faster
 				anim.Speed = animSpeedFast
 				// if not set speed to zero
 			} else if e.Status.Released {
-				mov.amount.Y = 0
+				mov.Amount.Y = 0
 				// now we are animated slower
 				anim.Speed = animSpeedSlow
 			}
 			// update the entity
-			planeEnt.Set(mov)
-			planeEnt.Set(anim)
+			ps.plane.Set(mov)
+			ps.plane.Set(anim)
 		}
 	}
 	return nil
+}
+
+// System create a plane system
+func System(engine *gosge.Engine, gs geometry.Scale, dr geometry.Size) (*goecs.Entity, error) {
+	ps := planeSystem{
+		gs:    gs,
+		dr:    dr,
+		plane: nil,
+	}
+
+	if err := ps.load(engine); err != nil {
+		return nil, err
+	}
+	return ps.plane, nil
 }
