@@ -34,6 +34,7 @@ import (
 var opt = options.Options{
 	Title:      "mesh2prod",
 	BackGround: color.Black,
+	Icon:       "resources/icon/icon.png",
 }
 
 func main() {

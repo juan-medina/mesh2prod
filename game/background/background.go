@@ -38,8 +38,8 @@ import (
 )
 
 const (
-	cloudLayers    = 6   // number of cloud layers
-	numClouds      = 20  // number of clouds
+	cloudLayers    = 8   // number of cloud layers
+	numClouds      = 10  // number of clouds
 	minCloudSpeed  = 200 // Min cloud speed
 	cloudDiffSpeed = 60  // difference of speed per Layer
 )
@@ -123,7 +123,7 @@ func (bs *bgSystem) resetCloud(ent *goecs.Entity, from float32) error {
 	ln := layer.Depth - 1
 
 	// set the scale according to the layer
-	scale := 1 - (ln / 10)
+	scale := 1.5 - (ln/cloudLayers)*1.5
 
 	// sprite component
 	spr := sprite.Sprite{
@@ -143,11 +143,23 @@ func (bs *bgSystem) resetCloud(ent *goecs.Entity, from float32) error {
 			Y: 0,
 		},
 	}
+	y := float32(0)
+
+	top := rand.Intn(2) == 0
+
+	if top {
+		y = ((bs.dr.Height / 2) * bs.gs.Point.Y) * scale
+		y += bs.dr.Height / 6
+	} else {
+		y = bs.dr.Height * bs.gs.Point.Y
+		y -= bs.dr.Height / 6
+		y -= ((bs.dr.Height / 2) * bs.gs.Point.Y) * scale
+	}
 
 	// calculate position
 	pos := geometry.Point{
 		X: (rand.Float32()*bs.dr.Width + from) * bs.gs.Point.X,
-		Y: (rand.Float32() * bs.dr.Height) * bs.gs.Point.Y,
+		Y: y,
 	}
 
 	var size geometry.Size
@@ -180,12 +192,19 @@ func (bs *bgSystem) resetSystem(world *goecs.World, _ float32) error {
 		// get current position and reset
 		pos := geometry.Get.Point(ent)
 		rst := ent.Get(ResetType).(Reset)
+		spr := sprite.Get(ent)
 
 		// if we are at our Min reset
 		if pos.X < rst.At {
-			if err := bs.resetCloud(ent, bs.dr.Width*bs.gs.Min); err != nil {
+			if size, err := bs.eng.GetSpriteSize(spr.Sheet, spr.Name); err == nil {
+				ss := (size.Width / 2) * spr.Scale
+				if err := bs.resetCloud(ent, (bs.dr.Width+ss)*bs.gs.Min); err != nil {
+					return err
+				}
+			} else {
 				return err
 			}
+
 		}
 	}
 	return nil
