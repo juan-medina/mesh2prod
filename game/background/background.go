@@ -33,23 +33,19 @@ import (
 	"github.com/juan-medina/gosge/components/sprite"
 	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
-	"github.com/juan-medina/mesh2prod/game/plane"
 	"math/rand"
 	"reflect"
 )
 
 const (
-	cloudLayers    = 6     // number of cloud layers
-	numClouds      = 20    // number of clouds
-	minCloudSpeed  = 200   // Min cloud speed
-	cloudDiffSpeed = 40    // difference of speed per Layer
-	parallaxEffect = 0.045 // amount of Parallax effect
+	cloudLayers    = 6   // number of cloud layers
+	numClouds      = 20  // number of clouds
+	minCloudSpeed  = 200 // Min cloud speed
+	cloudDiffSpeed = 60  // difference of speed per Layer
 )
 
 var (
 	cloudTransparency = color.White.Alpha(235) // our cloud transparency
-
-	scalePerLayer = [...]float32{0.8, 0.7, 0.6, 0.5, 0.4, 0.3}
 )
 
 type bgSystem struct {
@@ -95,17 +91,17 @@ func (bs *bgSystem) load(eng *gosge.Engine) error {
 				effects.Layer{Depth: 1 + float32(ln)},
 			)
 			// set it random
-			if err = bs.updateCloud(ent, 0, ln); err != nil {
+			if err = bs.resetCloud(ent, 0); err != nil {
 				return err
 			}
 
-			// add another cloud
+			// add another cloud off-screen
 			ent = world.AddEntity(
 				cloudTransparency,
 				effects.Layer{Depth: 1 + float32(ln)},
 			)
 			// set it random off screen
-			if err = bs.updateCloud(ent, bs.dr.Width, ln); err != nil {
+			if err = bs.resetCloud(ent, bs.dr.Width); err != nil {
 				return err
 			}
 		}
@@ -114,30 +110,31 @@ func (bs *bgSystem) load(eng *gosge.Engine) error {
 	// add the reset system
 	world.AddSystem(bs.resetSystem)
 
-	// listen to plane changes
-	world.AddListener(bs.planeChanges)
-
 	return nil
 }
 
-func (bs *bgSystem) updateCloud(ent *goecs.Entity, from float32, ln int) error {
+func (bs *bgSystem) resetCloud(ent *goecs.Entity, from float32) error {
 	// get a random sprite
 	spn := rand.Intn(3) + 1
 	sf := fmt.Sprintf("cloud%d.PNG", spn)
 
+	// get the layer number
+	layer := effects.Get.Layer(ent)
+	ln := layer.Depth - 1
+
 	// set the scale according to the layer
-	scale := scalePerLayer[ln]
+	scale := 1 - (ln / 10)
 
 	// sprite component
 	spr := sprite.Sprite{
 		Sheet: constants.SpriteSheet,
 		Name:  sf,
 		Scale: bs.gs.Min * scale,
-		FlipX: rand.Intn(2) == 0,
+		FlipX: rand.Intn(2) == 0, // random flipped horizontally
 	}
 
 	// speed base on the layer
-	speed := -(minCloudSpeed + (cloudDiffSpeed * (cloudLayers - float32(ln))))
+	speed := -(minCloudSpeed + (cloudDiffSpeed * (cloudLayers - ln)))
 
 	// movement component
 	mov := movement.Movement{
@@ -148,10 +145,9 @@ func (bs *bgSystem) updateCloud(ent *goecs.Entity, from float32, ln int) error {
 	}
 
 	// calculate position
-	y := (rand.Float32() * bs.dr.Height) * bs.gs.Point.Y
 	pos := geometry.Point{
 		X: (rand.Float32()*bs.dr.Width + from) * bs.gs.Point.X,
-		Y: y,
+		Y: (rand.Float32() * bs.dr.Height) * bs.gs.Point.Y,
 	}
 
 	var size geometry.Size
@@ -163,35 +159,31 @@ func (bs *bgSystem) updateCloud(ent *goecs.Entity, from float32, ln int) error {
 	}
 
 	// parallax component
-	par := Parallax{
-		Min:   -((size.Width / 2) * bs.gs.Point.X * scale),
-		Layer: ln,
-		Y:     y,
-	}
+	rst := Reset{At: -((size.Width / 2) * bs.gs.Point.X * scale)}
 
 	// update entity
 	ent.Set(spr)
 	ent.Set(mov)
 	ent.Set(pos)
-	ent.Set(par)
+	ent.Set(rst)
 
 	return nil
 }
 
 // reset the Layer if go off screen
 func (bs *bgSystem) resetSystem(world *goecs.World, _ float32) error {
-	// get our entities that has position and Parallax
-	for it := world.Iterator(geometry.TYPE.Point, ParallaxType); it != nil; it = it.Next() {
+	// get our entities that has position and Reset
+	for it := world.Iterator(geometry.TYPE.Point, ResetType); it != nil; it = it.Next() {
 		// get the entity
 		ent := it.Value()
 
-		// get current position and movement
+		// get current position and reset
 		pos := geometry.Get.Point(ent)
-		par := ent.Get(ParallaxType).(Parallax)
+		rst := ent.Get(ResetType).(Reset)
 
 		// if we are at our Min reset
-		if pos.X < par.Min {
-			if err := bs.updateCloud(ent, bs.dr.Width*bs.gs.Min, par.Layer); err != nil {
+		if pos.X < rst.At {
+			if err := bs.resetCloud(ent, bs.dr.Width*bs.gs.Min); err != nil {
 				return err
 			}
 		}
@@ -199,41 +191,13 @@ func (bs *bgSystem) resetSystem(world *goecs.World, _ float32) error {
 	return nil
 }
 
-// when plane changes position move the layers up or down a bit
-func (bs *bgSystem) planeChanges(world *goecs.World, signal interface{}, _ float32) error {
-	switch e := signal.(type) {
-	case plane.PositionChangeEvent:
-		// calculate a shift from the plane position
-		shift := (e.Pos.Y - (bs.dr.Height / 2 * bs.gs.Point.Y)) * parallaxEffect
-
-		// get our entities that has position and Parallax
-		for it := world.Iterator(geometry.TYPE.Point, ParallaxType); it != nil; it = it.Next() {
-			// get the entity
-			ent := it.Value()
-
-			// get current position and movement
-			pos := geometry.Get.Point(ent)
-			par := ent.Get(ParallaxType).(Parallax)
-
-			// update the position
-			pos.Y = par.Y - (shift * float32(cloudLayers-par.Layer+1))
-
-			// update entity
-			ent.Set(pos)
-		}
-	}
-	return nil
+// Reset represent the Reset effect for our object
+type Reset struct {
+	At float32 // Min position of this element to be off screen
 }
 
-// Parallax represent the Parallax effect for our object
-type Parallax struct {
-	Min   float32 // Min position of this element to be off screen
-	Layer int     // Layer for the Parallax effect
-	Y     float32 // the original Y for the element
-}
-
-// ParallaxType is the reflect.Type of Parallax
-var ParallaxType = reflect.TypeOf(Parallax{})
+// ResetType is the reflect.Type of Reset
+var ResetType = reflect.TypeOf(Reset{})
 
 // System creates the background system
 func System(engine *gosge.Engine, gs geometry.Scale, dr geometry.Size) error {
