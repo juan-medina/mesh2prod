@@ -39,7 +39,7 @@ import (
 
 const (
 	cloudLayers    = 6                                  // number of cloud layers
-	numClouds      = 40                                 // number of clouds
+	numClouds      = 20                                 // number of clouds
 	minCloudSpeed  = 200                                // Min cloud speed
 	cloudDiffSpeed = 40                                 // difference of speed per Layer
 	parallaxEffect = 0.045                              // amount of Parallax effect
@@ -47,7 +47,9 @@ const (
 )
 
 var (
-	cloudTransparency = color.White.Alpha(245) // our cloud transparency
+	cloudTransparency = color.White.Alpha(235) // our cloud transparency
+
+	scalePerLayer = [...]float32{0.8, 0.7, 0.6, 0.5, 0.4, 0.3}
 )
 
 type bgSystem struct {
@@ -124,7 +126,7 @@ func (bs *bgSystem) updateCloud(ent *goecs.Entity, from float32, ln int) error {
 	sf := fmt.Sprintf("cloud%d.PNG", spn)
 
 	// set the scale according to the layer
-	scale := (1 - (float32(ln) / cloudLayers)) * 0.8
+	scale := scalePerLayer[ln]
 
 	// sprite component
 	spr := sprite.Sprite{
