@@ -31,6 +31,7 @@ import (
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/components/shapes"
 	"github.com/juan-medina/gosge/components/sprite"
+	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
 	"github.com/juan-medina/mesh2prod/game/plane"
 	"math/rand"
@@ -38,12 +39,11 @@ import (
 )
 
 const (
-	cloudLayers    = 6                                  // number of cloud layers
-	numClouds      = 20                                 // number of clouds
-	minCloudSpeed  = 200                                // Min cloud speed
-	cloudDiffSpeed = 40                                 // difference of speed per Layer
-	parallaxEffect = 0.045                              // amount of Parallax effect
-	spriteSheet    = "resources/sprites/mesh2prod.json" // game sprite sheet
+	cloudLayers    = 6     // number of cloud layers
+	numClouds      = 20    // number of clouds
+	minCloudSpeed  = 200   // Min cloud speed
+	cloudDiffSpeed = 40    // difference of speed per Layer
+	parallaxEffect = 0.045 // amount of Parallax effect
 )
 
 var (
@@ -130,7 +130,7 @@ func (bs *bgSystem) updateCloud(ent *goecs.Entity, from float32, ln int) error {
 
 	// sprite component
 	spr := sprite.Sprite{
-		Sheet: spriteSheet,
+		Sheet: constants.SpriteSheet,
 		Name:  sf,
 		Scale: bs.gs.Min * scale,
 		FlipX: rand.Intn(2) == 0,
@@ -158,7 +158,7 @@ func (bs *bgSystem) updateCloud(ent *goecs.Entity, from float32, ln int) error {
 	var err error
 
 	//get sprite size
-	if size, err = bs.eng.GetSpriteSize(spriteSheet, sf); err != nil {
+	if size, err = bs.eng.GetSpriteSize(constants.SpriteSheet, sf); err != nil {
 		return err
 	}
 

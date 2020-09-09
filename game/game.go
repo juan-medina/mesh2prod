@@ -27,14 +27,14 @@ import (
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/events"
 	"github.com/juan-medina/mesh2prod/game/background"
+	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/mesh"
 	"github.com/juan-medina/mesh2prod/game/movement"
 	"github.com/juan-medina/mesh2prod/game/plane"
 )
 
 const (
-	spriteSheet = "resources/sprites/mesh2prod.json" // game sprite sheet
-	music       = "resources/music/loop.ogg"         // our game music
+	music = "resources/music/loop.ogg" // our game music
 )
 
 var (
@@ -57,7 +57,7 @@ func Load(eng *gosge.Engine) error {
 	}
 
 	// load the sprite sheet
-	if err = eng.LoadSpriteSheet(spriteSheet); err != nil {
+	if err = eng.LoadSpriteSheet(constants.SpriteSheet); err != nil {
 		return err
 	}
 

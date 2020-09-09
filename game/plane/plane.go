@@ -31,17 +31,17 @@ import (
 	"github.com/juan-medina/gosge/components/effects"
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/events"
+	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
 )
 
 const (
-	spriteSheet     = "resources/sprites/mesh2prod.json" // game sprite sheet
-	gopherPlaneAnim = "gopher_plane_%d.png"              // base animation for our gopher
-	planeScale      = float32(0.5)                       // plane scale
-	planeX          = 720                                // plane X position
-	planeSpeed      = 900                                // plane speed
-	animSpeedSlow   = 0.65                               // animation slow speed
-	animSpeedFast   = 1                                  // animation fast speed
+	gopherPlaneAnim = "gopher_plane_%d.png" // base animation for our gopher
+	planeScale      = float32(0.5)          // plane scale
+	planeX          = 720                   // plane X position
+	planeSpeed      = 900                   // plane speed
+	animSpeedSlow   = 0.65                  // animation slow speed
+	animSpeedFast   = 1                     // animation fast speed
 )
 
 type planeSystem struct {
@@ -60,7 +60,7 @@ func (ps *planeSystem) load(eng *gosge.Engine) error {
 	world := eng.World()
 
 	// get the size of the first sprite for our plane
-	if size, err = eng.GetSpriteSize(spriteSheet, fmt.Sprintf(gopherPlaneAnim, 1)); err != nil {
+	if size, err = eng.GetSpriteSize(constants.SpriteSheet, fmt.Sprintf(gopherPlaneAnim, 1)); err != nil {
 		return err
 	}
 
@@ -72,7 +72,7 @@ func (ps *planeSystem) load(eng *gosge.Engine) error {
 		animation.Animation{
 			Sequences: map[string]animation.Sequence{
 				"flying": {
-					Sheet:  spriteSheet,
+					Sheet:  constants.SpriteSheet,
 					Base:   gopherPlaneAnim,
 					Scale:  ps.gs.Min * planeScale,
 					Frames: 2,

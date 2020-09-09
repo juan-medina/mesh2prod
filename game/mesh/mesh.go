@@ -29,18 +29,18 @@ import (
 	"github.com/juan-medina/gosge/components/animation"
 	"github.com/juan-medina/gosge/components/effects"
 	"github.com/juan-medina/gosge/components/geometry"
+	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
 	"github.com/juan-medina/mesh2prod/game/plane"
 )
 
 const (
-	spriteSheet    = "resources/sprites/mesh2prod.json" // game sprite sheet
-	animSpeedSlow  = 0.65                               // animation slow speed
-	meshSpriteAnim = "box%d.png"                        // the mesh sprite
-	meshScale      = 1                                  // mesh scale
-	meshX          = 310                                // mesh scale
-	meshSpeed      = float32(40)                        // mesh speed
-	topMeshSpeed   = meshSpeed * 2                      // top mesh speed
+	animSpeedSlow  = 0.65          // animation slow speed
+	meshSpriteAnim = "box%d.png"   // the mesh sprite
+	meshScale      = 1             // mesh scale
+	meshX          = 310           // mesh scale
+	meshSpeed      = float32(40)   // mesh speed
+	topMeshSpeed   = meshSpeed * 2 // top mesh speed
 )
 
 type meshSystem struct {
@@ -59,7 +59,7 @@ func (ms *meshSystem) load(eng *gosge.Engine) error {
 	world := eng.World()
 
 	// get the size of the mesh
-	if size, err = eng.GetSpriteSize(spriteSheet, fmt.Sprintf(meshSpriteAnim, 1)); err != nil {
+	if size, err = eng.GetSpriteSize(constants.SpriteSheet, fmt.Sprintf(meshSpriteAnim, 1)); err != nil {
 		return err
 	}
 
@@ -71,7 +71,7 @@ func (ms *meshSystem) load(eng *gosge.Engine) error {
 		animation.Animation{
 			Sequences: map[string]animation.Sequence{
 				"flying": {
-					Sheet:  spriteSheet,
+					Sheet:  constants.SpriteSheet,
 					Base:   meshSpriteAnim,
 					Scale:  ms.gs.Min * meshScale,
 					Frames: 2,
