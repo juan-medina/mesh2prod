@@ -53,8 +53,8 @@
     {
       "filename": "gopher_plane_1.png",
       "frame": {
-        "x": 5,
-        "y": 723,
+        "x": 615,
+        "y": 5,
         "w": 300,
         "h": 179
       },
@@ -78,8 +78,8 @@
     {
       "filename": "gopher_plane_2.png",
       "frame": {
-        "x": 315,
-        "y": 723,
+        "x": 615,
+        "y": 194,
         "w": 300,
         "h": 179
       },
@@ -99,6 +99,81 @@
         "x": 0.5,
         "y": 0.5
       }
+    },
+    {
+      "filename": "cloud1.PNG",
+      "frame": {
+        "x": 615,
+        "y": 383,
+        "w": 294,
+        "h": 109
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 294,
+        "h": 109
+      },
+      "sourceSize": {
+        "w": 294,
+        "h": 109
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "cloud3.PNG",
+      "frame": {
+        "x": 615,
+        "y": 502,
+        "w": 235,
+        "h": 91
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 235,
+        "h": 91
+      },
+      "sourceSize": {
+        "w": 235,
+        "h": 91
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "cloud2.PNG",
+      "frame": {
+        "x": 615,
+        "y": 603,
+        "w": 182,
+        "h": 81
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 182,
+        "h": 81
+      },
+      "sourceSize": {
+        "w": 182,
+        "h": 81
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
     }
   ],
   "meta": {
@@ -107,8 +182,8 @@
     "image": "mesh2prod.png",
     "format": "RGBA8888",
     "size": {
-      "w": 620,
-      "h": 907
+      "w": 920,
+      "h": 718
     },
     "scale": 1
   }
