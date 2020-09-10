@@ -42,6 +42,8 @@ const (
 	planeSpeed      = 900                   // plane speed
 	animSpeedSlow   = 0.65                  // animation slow speed
 	animSpeedFast   = 1                     // animation fast speed
+	joinShiftX      = 20                    // shift in X for the joint
+	joinShiftY      = 5                     // shift in Y for the joint
 )
 
 type planeSystem struct {
@@ -49,23 +51,23 @@ type planeSystem struct {
 	dr      geometry.Size
 	plane   *goecs.Entity
 	lastPos geometry.Point
+	size    geometry.Size
 }
 
 // add the background
 func (ps *planeSystem) load(eng *gosge.Engine) error {
 	var err error
-	var size geometry.Size
 
 	// get the ECS world
 	world := eng.World()
 
 	// get the size of the first sprite for our plane
-	if size, err = eng.GetSpriteSize(constants.SpriteSheet, fmt.Sprintf(gopherPlaneAnim, 1)); err != nil {
+	if ps.size, err = eng.GetSpriteSize(constants.SpriteSheet, fmt.Sprintf(gopherPlaneAnim, 1)); err != nil {
 		return err
 	}
 
 	// calculate halve of the height
-	halveHeight := (size.Height / 2) * planeScale
+	halveHeight := (ps.size.Height / 2) * planeScale
 
 	// add our plane
 	ps.plane = world.AddEntity(
@@ -158,7 +160,11 @@ func (ps *planeSystem) notifyPositionChanges(world *goecs.World, _ float32) erro
 
 	if current.X != ps.lastPos.X || current.Y != ps.lastPos.Y {
 		ps.lastPos = current
-		return world.Signal(PositionChangeEvent{Pos: current})
+		joint := geometry.Point{
+			X: current.X - (((ps.size.Width / 2) - joinShiftX) * planeScale * ps.gs.Point.X),
+			Y: current.Y - (joinShiftY * planeScale * ps.gs.Point.Y),
+		}
+		return world.Signal(PositionChangeEvent{Pos: current, Joint: joint})
 	}
 
 	return nil
@@ -177,5 +183,6 @@ func System(engine *gosge.Engine, gs geometry.Scale, dr geometry.Size) error {
 
 // PositionChangeEvent notify others that the plane has change position
 type PositionChangeEvent struct {
-	Pos geometry.Point
+	Pos   geometry.Point // Pos is where ir our plane is
+	Joint geometry.Point // Joint is the joint point for our plane
 }

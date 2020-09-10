@@ -27,20 +27,26 @@ import (
 	"github.com/juan-medina/goecs"
 	"github.com/juan-medina/gosge"
 	"github.com/juan-medina/gosge/components/animation"
+	"github.com/juan-medina/gosge/components/color"
 	"github.com/juan-medina/gosge/components/effects"
 	"github.com/juan-medina/gosge/components/geometry"
+	"github.com/juan-medina/gosge/components/shapes"
 	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
 	"github.com/juan-medina/mesh2prod/game/plane"
 )
 
 const (
-	animSpeedSlow  = 0.65          // animation slow speed
-	meshSpriteAnim = "box%d.png"   // the mesh sprite
-	meshScale      = 1             // mesh scale
-	meshX          = 310           // mesh scale
-	meshSpeed      = float32(40)   // mesh speed
-	topMeshSpeed   = meshSpeed * 2 // top mesh speed
+	animSpeedSlow    = 0.65          // animation slow speed
+	meshSpriteAnim   = "box%d.png"   // the mesh sprite
+	meshScale        = 1             // mesh scale
+	meshX            = 310           // mesh scale
+	meshSpeed        = float32(40)   // mesh speed
+	topMeshSpeed     = meshSpeed * 2 // top mesh speed
+	joinShiftX       = 5             // shift X for the joint
+	joinShiftYTop    = 130           // shift Y for the top joint
+	joinShiftYBottom = 170           // shift Y for the bottom joint
+	lineThickness    = 5             // the line thickness
 )
 
 type meshSystem struct {
@@ -48,23 +54,24 @@ type meshSystem struct {
 	dr       geometry.Size
 	mesh     *goecs.Entity
 	planePos geometry.Point
+	line     [2]*goecs.Entity
+	size     geometry.Size
 }
 
 // add the background
 func (ms *meshSystem) load(eng *gosge.Engine) error {
 	var err error
-	var size geometry.Size
 
 	// get the ECS world
 	world := eng.World()
 
 	// get the size of the mesh
-	if size, err = eng.GetSpriteSize(constants.SpriteSheet, fmt.Sprintf(meshSpriteAnim, 1)); err != nil {
+	if ms.size, err = eng.GetSpriteSize(constants.SpriteSheet, fmt.Sprintf(meshSpriteAnim, 1)); err != nil {
 		return err
 	}
 
 	// calculate halve of the height
-	halveHeight := (size.Height / 2) * meshScale
+	halveHeight := (ms.size.Height / 2) * meshScale
 
 	// add the mesh
 	ms.mesh = world.AddEntity(
@@ -104,6 +111,19 @@ func (ms *meshSystem) load(eng *gosge.Engine) error {
 		effects.Layer{Depth: 0},
 	)
 
+	// create the two lines
+	for ln := 0; ln < 2; ln++ {
+		ms.line[ln] = world.AddEntity(
+			shapes.Line{
+				To:        geometry.Point{},
+				Thickness: lineThickness * ms.gs.Min,
+			},
+			geometry.Point{},
+			effects.Layer{Depth: 1},
+			color.Gopher,
+		)
+	}
+
 	// add the follow system
 	world.AddSystem(ms.followSystem)
 
@@ -139,6 +159,20 @@ func (ms *meshSystem) followSystem(_ *goecs.World, delta float32) error {
 	// update the mesh Movement
 	ms.mesh.Set(mov)
 
+	// we will calculate the line from position
+	var linePos geometry.Point
+
+	// calculate X, the same for both lines
+	linePos.X = meshPos.X + (((ms.size.Width / 2) - joinShiftX) * meshScale * ms.gs.Point.X)
+
+	// top line
+	linePos.Y = meshPos.Y - (joinShiftYTop * meshScale * ms.gs.Point.Y)
+	ms.line[0].Set(linePos)
+
+	// bottom line
+	linePos.Y = meshPos.Y + (joinShiftYBottom * meshScale * ms.gs.Point.Y)
+	ms.line[1].Set(linePos)
+
 	return nil
 }
 
@@ -147,6 +181,13 @@ func (ms *meshSystem) planeChanges(_ *goecs.World, signal interface{}, _ float32
 	switch e := signal.(type) {
 	case plane.PositionChangeEvent:
 		ms.planePos = e.Pos
+		// go the lines and update the to, same for both
+		for ln := 0; ln < 2; ln++ {
+			line := shapes.Get.Line(ms.line[ln])
+			line.To = e.Joint // we will use the joint position send by the plane
+			ms.line[ln].Set(line)
+		}
+
 	}
 	return nil
 }
