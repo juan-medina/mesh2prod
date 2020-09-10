@@ -114,29 +114,37 @@ func (ps *planeSystem) load(eng *gosge.Engine) error {
 func (ps planeSystem) keyMoveListener(_ *goecs.World, signal interface{}, _ float32) error {
 	switch e := signal.(type) {
 	// if we got a key event
-	case events.KeyEvent:
+	case events.KeyDownEvent:
+		// if we have use the cursor up or down
+		if e.Key == device.KeyUp || e.Key == device.KeyDown {
+			// get the Movement and animation components
+			mov := ps.plane.Get(movement.Type).(movement.Movement)
+			anim := animation.Get.Animation(ps.plane)
+			switch e.Key {
+			case device.KeyUp:
+				mov.Amount.Y = -planeSpeed
+			case device.KeyDown:
+				mov.Amount.Y = planeSpeed
+			}
+			// now we are animated faster
+			anim.Speed = animSpeedFast
+
+			// update the entity
+			ps.plane.Set(mov)
+			ps.plane.Set(anim)
+		}
+	case events.KeyUpEvent:
 		// if we have use the cursor up or down
 		if e.Key == device.KeyUp || e.Key == device.KeyDown {
 			// get the Movement and animation components
 			mov := ps.plane.Get(movement.Type).(movement.Movement)
 			anim := animation.Get.Animation(ps.plane)
 
-			// if we have press the key calculate the speed
-			if e.Status.Pressed {
-				switch e.Key {
-				case device.KeyUp:
-					mov.Amount.Y = -planeSpeed
-				case device.KeyDown:
-					mov.Amount.Y = planeSpeed
-				}
-				// now we are animated faster
-				anim.Speed = animSpeedFast
-				// if not set speed to zero
-			} else if e.Status.Released {
-				mov.Amount.Y = 0
-				// now we are animated slower
-				anim.Speed = animSpeedSlow
-			}
+			// set speed to zero
+			mov.Amount.Y = 0
+			// now we are animated slower
+			anim.Speed = animSpeedSlow
+
 			// update the entity
 			ps.plane.Set(mov)
 			ps.plane.Set(anim)

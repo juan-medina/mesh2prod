@@ -8,8 +8,8 @@ github.com/gen2brain/raylib-go v0.0.0-20200905153824-5b0944b5567a h1:akS5kJf8OfF
 github.com/gen2brain/raylib-go v0.0.0-20200905153824-5b0944b5567a/go.mod h1:LUVRDQbnxUaOgzLzW5lMS+IcbqlXHIqIA9wq8wxzmcA=
 github.com/juan-medina/goecs v1.3.1 h1:jcJzkLl3w/1a6HQIviM3iC0E+sgADyKBTvY4DzHRn7I=
 github.com/juan-medina/goecs v1.3.1/go.mod h1:9NCnf8upBiDiF/a7Sjk42V8irmRlr7DOMQFObn8agHU=
-github.com/juan-medina/gosge v0.1.5 h1:jVYtqJEBDMsK7DRPQBJ9t5GBisS6l/nmdd6vfpT+B3M=
-github.com/juan-medina/gosge v0.1.5/go.mod h1:L9TGMtWD8x+1uPApY9C0vPEvVir28y/GJ8Z+JVrGMvU=
+github.com/juan-medina/gosge v0.1.6 h1:fx1RnRSM8Cpmvz+rnKY6y0Zo9eN8LKI5JCG/gelRu6U=
+github.com/juan-medina/gosge v0.1.6/go.mod h1:L9TGMtWD8x+1uPApY9C0vPEvVir28y/GJ8Z+JVrGMvU=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
