@@ -36,6 +36,7 @@ const (
 	empty = blocState(iota)
 	fill
 	placed
+	clear
 )
 
 type gameMap struct {
@@ -63,6 +64,81 @@ func (g gameMap) String() string {
 
 func (g *gameMap) Set(c, r int, state blocState) {
 	g.data[c][r] = state
+}
+
+func (g *gameMap) Place(c, r int) {
+	g.data[c][r] = placed
+
+	var tr int
+	for tr = r; tr >= 0; tr-- {
+		if g.data[c][tr] == empty {
+			tr++
+			break
+		}
+	}
+
+	var sc int
+	for sc = c; sc < g.cols; sc++ {
+		if g.data[sc][r] == empty {
+			sc--
+			break
+		}
+	}
+
+	var br int
+	for br = r; br < g.rows; br++ {
+		if g.data[c][br] == empty {
+			br--
+			break
+		}
+	}
+
+	var fromC, fromR, toC, toR int
+
+	fromC = c
+	fromR = tr
+	toC = sc
+	toR = br
+
+	if g.CanFill(fromC, fromR, toC, toR) {
+		g.Fill(fromC, fromR, toC, toR)
+	}
+}
+
+func (g gameMap) CanFill(fromC, fromR, toC, toR int) bool {
+	for c := fromC; c <= toC; c++ {
+		if g.data[c][fromR] == empty {
+			return false
+		}
+	}
+
+	for c := fromC; c <= toC; c++ {
+		if g.data[c][toR] == empty {
+			return false
+		}
+	}
+
+	for r := fromR; r <= toR; r++ {
+		if g.data[fromC][r] == empty {
+			return false
+		}
+	}
+
+	for r := fromR; r <= toR; r++ {
+		if g.data[toC][r] == empty {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (g *gameMap) Fill(fromC, fromR, toC, toR int) {
+	for c := fromC; c <= toC; c++ {
+		for r := fromR; r <= toR; r++ {
+			g.data[c][r] = clear
+		}
+	}
 }
 
 func newGameMap(cols, rows int) *gameMap {

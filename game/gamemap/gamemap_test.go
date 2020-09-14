@@ -70,5 +70,29 @@ func TestGameMap_Set(t *testing.T) {
 	if got != expect {
 		t.Fatalf("from string error, got %v, expect %v", got, expect)
 	}
+}
 
+func TestGameMap_Place(t *testing.T) {
+	str := "" +
+		"        " + "\n" +
+		"   1111 " + "\n" +
+		"    111 " + "\n" +
+		"   1111 " + "\n" +
+		"        " + "\n"
+
+	gm := fromString(str)
+
+	gm.Place(3, 2)
+
+	got := gm.String()
+	expect := "" +
+		"        " + "\n" +
+		"   3333 " + "\n" +
+		"   3333 " + "\n" +
+		"   3333 " + "\n" +
+		"        " + "\n"
+
+	if got != expect {
+		t.Fatalf("from string error, got %v, expect %v", got, expect)
+	}
 }
