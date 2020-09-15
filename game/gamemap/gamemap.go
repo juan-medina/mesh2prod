@@ -100,9 +100,11 @@ func (g *gameMap) Place(c, r int) {
 	toC = sc
 	toR = br
 
-	if toR != fromR {
-		if g.CanFill(fromC, fromR, toC, toR) {
-			g.Fill(fromC, fromR, toC, toR)
+	for cc := fromC + 1; cc <= toC; cc++ {
+		for cr := fromR + 1; cr <= toR; cr++ {
+			if g.CanFill(fromC, fromR, cc, cr) {
+				g.Fill(fromC, fromR, cc, cr)
+			}
 		}
 	}
 }
