@@ -60,7 +60,7 @@ func TestGameMap_Set(t *testing.T) {
 
 	gm := fromString(str)
 
-	gm.Set(3, 2, placed)
+	gm.set(3, 2, placed)
 
 	got := gm.String()
 	expect := "" +
@@ -296,13 +296,61 @@ func TestGameMap_Place(t *testing.T) {
 				"   3333    " + "\n" +
 				"           " + "\n",
 		},
+		{
+			given: "" +
+				"                         " + "\n" +
+				"   111111111111111111111 " + "\n" +
+				"    1111                 " + "\n" +
+				"   111111111111111111111 " + "\n" +
+				"                         " + "\n",
+			placeC: 3,
+			placeR: 2,
+			expect: "" +
+				"                         " + "\n" +
+				"   333331111111111111111 " + "\n" +
+				"   33333                 " + "\n" +
+				"   333331111111111111111 " + "\n" +
+				"                         " + "\n",
+		},
+		{
+			given: "" +
+				"                         " + "\n" +
+				"   111111111111111111111 " + "\n" +
+				"    1                  1 " + "\n" +
+				"   111111111111111111111 " + "\n" +
+				"                         " + "\n",
+			placeC: 3,
+			placeR: 2,
+			expect: "" +
+				"                         " + "\n" +
+				"   331111111111111111111 " + "\n" +
+				"   33                  1 " + "\n" +
+				"   331111111111111111111 " + "\n" +
+				"                         " + "\n",
+		},
+		{
+			given: "" +
+				"                         " + "\n" +
+				"   11111                 " + "\n" +
+				"     1111111111111111111 " + "\n" +
+				"   11111                 " + "\n" +
+				"                         " + "\n",
+			placeC: 4,
+			placeR: 2,
+			expect: "" +
+				"                         " + "\n" +
+				"   13333                 " + "\n" +
+				"    33331111111111111111 " + "\n" +
+				"   13333                 " + "\n" +
+				"                         " + "\n",
+		},
 	}
 
 	for i, c := range cases {
 		t.Run(fmt.Sprintf("case %d", i+1), func(t *testing.T) {
 			gm := fromString(c.given)
 
-			gm.Place(c.placeC, c.placeR)
+			gm.place(c.placeC, c.placeR)
 
 			got := gm.String()
 

@@ -62,13 +62,15 @@ func (g gameMap) String() string {
 	return result
 }
 
-func (g *gameMap) Set(c, r int, state blocState) {
+func (g *gameMap) set(c, r int, state blocState) {
 	g.data[c][r] = state
 }
 
-func (g *gameMap) Place(c, r int) {
+func (g *gameMap) place(c, r int) {
+	// we set this block to place
 	g.data[c][r] = placed
 
+	// search the top row
 	var tr int
 	for tr = r; tr >= 0; tr-- {
 		if g.data[c][tr] == empty {
@@ -77,6 +79,7 @@ func (g *gameMap) Place(c, r int) {
 		}
 	}
 
+	// search the right column
 	var sc int
 	for sc = c; sc < g.cols; sc++ {
 		if g.data[sc][r] == empty {
@@ -85,6 +88,7 @@ func (g *gameMap) Place(c, r int) {
 		}
 	}
 
+	// search the bottom row
 	var br int
 	for br = r; br < g.rows; br++ {
 		if g.data[c][br] == empty {
@@ -93,23 +97,25 @@ func (g *gameMap) Place(c, r int) {
 		}
 	}
 
+	// calculate from and to
 	var fromC, fromR, toC, toR int
-
 	fromC = c
 	fromR = tr
 	toC = sc
 	toR = br
 
+	// check for the whole area each subarea
 	for cc := fromC + 1; cc <= toC; cc++ {
 		for cr := fromR + 1; cr <= toR; cr++ {
-			if g.CanFill(fromC, fromR, cc, cr) {
-				g.Fill(fromC, fromR, cc, cr)
+			// if we could clear this sub area clear it
+			if g.canClearArea(fromC, fromR, cc, cr) {
+				g.clearArea(fromC, fromR, cc, cr)
 			}
 		}
 	}
 }
 
-func (g gameMap) CanFill(fromC, fromR, toC, toR int) bool {
+func (g gameMap) canClearArea(fromC, fromR, toC, toR int) bool {
 	for c := fromC; c <= toC; c++ {
 		if g.data[c][fromR] == empty {
 			return false
@@ -137,7 +143,7 @@ func (g gameMap) CanFill(fromC, fromR, toC, toR int) bool {
 	return true
 }
 
-func (g *gameMap) Fill(fromC, fromR, toC, toR int) {
+func (g *gameMap) clearArea(fromC, fromR, toC, toR int) {
 	for c := fromC; c <= toC; c++ {
 		for r := fromR; r <= toR; r++ {
 			g.data[c][r] = clear
