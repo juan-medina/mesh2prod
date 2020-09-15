@@ -22,7 +22,10 @@
 
 package gamemap
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestFromString(t *testing.T) {
 	str := "" +
@@ -73,26 +76,157 @@ func TestGameMap_Set(t *testing.T) {
 }
 
 func TestGameMap_Place(t *testing.T) {
-	str := "" +
-		"        " + "\n" +
-		"   1111 " + "\n" +
-		"    111 " + "\n" +
-		"   1111 " + "\n" +
-		"        " + "\n"
+	type tc struct {
+		given  string
+		placeR int
+		placeC int
+		expect string
+	}
 
-	gm := fromString(str)
+	cases := []tc{
+		{
+			given: "" +
+				"        " + "\n" +
+				"   1111 " + "\n" +
+				"    111 " + "\n" +
+				"   1111 " + "\n" +
+				"        " + "\n",
+			placeC: 3,
+			placeR: 2,
+			expect: "" +
+				"        " + "\n" +
+				"   3333 " + "\n" +
+				"   3333 " + "\n" +
+				"   3333 " + "\n" +
+				"        " + "\n",
+		},
+		{
+			given: "" +
+				"        " + "\n" +
+				"    111 " + "\n" +
+				"   1111 " + "\n" +
+				"   1111 " + "\n" +
+				"        " + "\n",
+			placeC: 3,
+			placeR: 1,
+			expect: "" +
+				"        " + "\n" +
+				"   3333 " + "\n" +
+				"   3333 " + "\n" +
+				"   3333 " + "\n" +
+				"        " + "\n",
+		},
+		{
+			given: "" +
+				"        " + "\n" +
+				"   1111 " + "\n" +
+				"   1111 " + "\n" +
+				"    111 " + "\n" +
+				"        " + "\n",
+			placeC: 3,
+			placeR: 3,
+			expect: "" +
+				"        " + "\n" +
+				"   3333 " + "\n" +
+				"   3333 " + "\n" +
+				"   3333 " + "\n" +
+				"        " + "\n",
+		},
+		{
+			given: "" +
+				"        " + "\n" +
+				"   1111 " + "\n" +
+				"   1111 " + "\n" +
+				"    111 " + "\n" +
+				"        " + "\n",
+			placeC: 2,
+			placeR: 1,
+			expect: "" +
+				"        " + "\n" +
+				"  21111 " + "\n" +
+				"   1111 " + "\n" +
+				"    111 " + "\n" +
+				"        " + "\n",
+		},
+		{
+			given: "" +
+				"                  " + "\n" +
+				"    1111111111111 " + "\n" +
+				"   11111111111111 " + "\n" +
+				"                  " + "\n",
+			placeC: 3,
+			placeR: 1,
+			expect: "" +
+				"                  " + "\n" +
+				"   33333333333333 " + "\n" +
+				"   33333333333333 " + "\n" +
+				"                  " + "\n",
+		},
+		{
+			given: "" +
+				"                  " + "\n" +
+				"   11111111111111 " + "\n" +
+				"    1111111111111 " + "\n" +
+				"                  " + "\n",
+			placeC: 3,
+			placeR: 2,
+			expect: "" +
+				"                  " + "\n" +
+				"   33333333333333 " + "\n" +
+				"   33333333333333 " + "\n" +
+				"                  " + "\n",
+		},
+		{
+			given: "" +
+				"      " + "\n" +
+				"   11 " + "\n" +
+				"    1 " + "\n" +
+				"   11 " + "\n" +
+				"      " + "\n",
+			placeC: 3,
+			placeR: 2,
+			expect: "" +
+				"      " + "\n" +
+				"   33 " + "\n" +
+				"   33 " + "\n" +
+				"   33 " + "\n" +
+				"      " + "\n",
+		},
+		{
+			given: "" +
+				"      " + "\n" +
+				"   11 " + "\n" +
+				"    1 " + "\n" +
+				"   11 " + "\n" +
+				"   11 " + "\n" +
+				"   11 " + "\n" +
+				"   11 " + "\n" +
+				"      " + "\n",
+			placeC: 3,
+			placeR: 2,
+			expect: "" +
+				"      " + "\n" +
+				"   33 " + "\n" +
+				"   33 " + "\n" +
+				"   33 " + "\n" +
+				"   33 " + "\n" +
+				"   33 " + "\n" +
+				"   33 " + "\n" +
+				"      " + "\n",
+		},
+	}
 
-	gm.Place(3, 2)
+	for i, c := range cases {
+		t.Run(fmt.Sprintf("case %d", i+1), func(t *testing.T) {
+			gm := fromString(c.given)
 
-	got := gm.String()
-	expect := "" +
-		"        " + "\n" +
-		"   3333 " + "\n" +
-		"   3333 " + "\n" +
-		"   3333 " + "\n" +
-		"        " + "\n"
+			gm.Place(c.placeC, c.placeR)
 
-	if got != expect {
-		t.Fatalf("from string error, got %v, expect %v", got, expect)
+			got := gm.String()
+
+			if got != c.expect {
+				t.Fatalf("from string error, got %v, expect %v", got, c.expect)
+			}
+		})
 	}
 }
