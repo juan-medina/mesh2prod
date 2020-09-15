@@ -360,3 +360,33 @@ func TestGameMap_Place(t *testing.T) {
 		})
 	}
 }
+
+func TestGameMap_Add(t *testing.T) {
+	gm := newGameMap(10, 10)
+
+	piece := [][]blocState{
+		{0, 0, 1},
+		{0, 1, 1},
+		{0, 1, 1},
+		{0, 0, 1},
+	}
+
+	gm.add(3, 5, piece)
+
+	got := gm.String()
+	expect := "" +
+		"          " + "\n" +
+		"          " + "\n" +
+		"          " + "\n" +
+		"          " + "\n" +
+		"          " + "\n" +
+		"     1    " + "\n" +
+		"    11    " + "\n" +
+		"    11    " + "\n" +
+		"     1    " + "\n" +
+		"          " + "\n"
+
+	if got != expect {
+		t.Fatalf("from string error, got %v, expect %v", got, expect)
+	}
+}

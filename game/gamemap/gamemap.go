@@ -115,6 +115,14 @@ func (g *gameMap) place(c, r int) {
 	}
 }
 
+func (g *gameMap) add(col, row int, piece [][]blocState) {
+	for r := 0; r < len(piece); r++ {
+		for c := 0; c < len(piece[r]); c++ {
+			g.data[col+c][row+r] = piece[r][c]
+		}
+	}
+}
+
 func (g gameMap) canClearArea(fromC, fromR, toC, toR int) bool {
 	for c := fromC; c <= toC; c++ {
 		if g.data[c][fromR] == empty {
