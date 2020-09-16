@@ -49,7 +49,7 @@ const (
 
 // game constants
 const (
-	blockSpeed = 100
+	blockSpeed = 50
 )
 
 type gameMapSystem struct {
@@ -292,11 +292,17 @@ func (gms *gameMapSystem) generate() {
 	limitR := gms.rows - 8
 	limitC := gms.cols - 8
 
-	for i := 0; i < 100; i++ {
-		p := rand.Intn(len(pieces))
-		r := 4 + rand.Intn(limitR)
-		c := 4 + rand.Intn(limitC)
-		gms.add(c, r, pieces[p])
+	cc := 4
+	for cc < limitC {
+		num := 2 + rand.Intn(2)
+		for i := 0; i < num; i++ {
+			c := cc - rand.Intn(6)
+			p := rand.Intn(len(pieces))
+			r := 4 + rand.Intn(limitR)
+			gms.add(c, r, pieces[p])
+		}
+
+		cc += 15 + rand.Intn(5)
 	}
 
 }
@@ -340,7 +346,7 @@ func (gms *gameMapSystem) addSprites(world *goecs.World) {
 
 // System create the map system
 func System(engine *gosge.Engine, gs geometry.Scale, dr geometry.Size) error {
-	gms := newGameMap(200, 34)
+	gms := newGameMap(500, 34)
 
 	gms.gs = gs
 	gms.dr = dr
