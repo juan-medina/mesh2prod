@@ -39,7 +39,7 @@ const (
 	gopherPlaneAnim = "gopher_plane_%d.png" // base animation for our gopher
 	planeScale      = float32(0.5)          // plane scale
 	planeX          = 720                   // plane X position
-	planeSpeed      = 900                   // plane speed
+	planeSpeed      = 450                   // plane speed
 	animSpeedSlow   = 0.65                  // animation slow speed
 	animSpeedFast   = 1                     // animation fast speed
 	joinShiftX      = 20                    // shift in X for the joint

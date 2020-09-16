@@ -27,11 +27,13 @@ import (
 	"fmt"
 	"github.com/juan-medina/goecs"
 	"github.com/juan-medina/gosge"
+	"github.com/juan-medina/gosge/components/color"
 	"github.com/juan-medina/gosge/components/effects"
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/components/sprite"
 	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
+	"github.com/juan-medina/mesh2prod/game/plane"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -49,17 +51,21 @@ const (
 
 // game constants
 const (
-	blockSpeed = 50
+	blockSpeed  = 50
+	blockSprite = "block.png"
 )
 
 type gameMapSystem struct {
-	rows      int
-	cols      int
-	data      [][]blocState
-	gs        geometry.Scale
-	dr        geometry.Size
-	blockSize geometry.Size
-	scroll    float32
+	rows         int
+	cols         int
+	data         [][]blocState
+	sprs         [][]*goecs.Entity
+	gs           geometry.Scale
+	dr           geometry.Size
+	blockSize    geometry.Size
+	scrollMarker *goecs.Entity
+	planePos     geometry.Point
+	cursor       *goecs.Entity
 }
 
 func (gms gameMapSystem) String() string {
@@ -180,13 +186,16 @@ func (gms *gameMapSystem) clearArea(fromC, fromR, toC, toR int) {
 
 func newGameMap(cols, rows int) *gameMapSystem {
 	data := make([][]blocState, cols)
+	sprs := make([][]*goecs.Entity, cols)
 	for c := 0; c < cols; c++ {
 		data[c] = make([]blocState, rows)
+		sprs[c] = make([]*goecs.Entity, rows)
 	}
 	return &gameMapSystem{
 		rows: rows,
 		cols: cols,
 		data: data,
+		sprs: sprs,
 	}
 }
 
@@ -223,14 +232,17 @@ func fromString(str string) *gameMapSystem {
 func (gms *gameMapSystem) load(eng *gosge.Engine) error {
 	var err error
 
-	if gms.blockSize, err = eng.GetSpriteSize(constants.SpriteSheet, "block.png"); err != nil {
+	if gms.blockSize, err = eng.GetSpriteSize(constants.SpriteSheet, blockSprite); err != nil {
 		return err
 	}
 
 	gms.generate()
 
-	gms.scroll = gms.dr.Width * .85
-	gms.addSprites(eng.World())
+	world := eng.World()
+
+	gms.addSprites(world)
+	world.AddSystem(gms.cursorSystem)
+	world.AddListener(gms.planeChanges)
 
 	return nil
 }
@@ -308,40 +320,107 @@ func (gms *gameMapSystem) generate() {
 }
 
 func (gms *gameMapSystem) addSprites(world *goecs.World) {
+	offset := gms.dr.Width * .85 * gms.gs.Point.X
 
-	px := float32(0)
-	py := float32(0)
+	gms.scrollMarker = gms.addEntity(world, 0, 0, offset)
+
+	gms.cursor = gms.addEntity(world, 0, 0, offset)
+
+	gms.cursor.Add(sprite.Sprite{
+		Sheet: constants.SpriteSheet,
+		Name:  blockSprite,
+		Scale: gms.gs.Min,
+	})
+	gms.cursor.Add(effects.Layer{Depth: 1})
+	gms.cursor.Add(color.Red)
+	gms.cursor.Add(effects.AlternateColor{
+		From:  color.Red,
+		To:    color.Red.Alpha(127),
+		Time:  0.25,
+		Delay: 0,
+	})
 
 	for c := 0; c < gms.cols; c++ {
 		for r := 0; r < gms.rows; r++ {
 			if gms.data[c][r] == empty {
 				continue
 			}
-			px = float32(c) * (gms.blockSize.Width * gms.gs.Point.X)
-			px += (gms.blockSize.Width / 2) * gms.gs.Point.X
-			px += gms.scroll * gms.gs.Point.X
-			py = float32(r) * (gms.blockSize.Height * gms.gs.Point.Y)
-			py += (gms.blockSize.Height / 2) * gms.gs.Point.Y
 
-			world.AddEntity(
-				sprite.Sprite{
-					Sheet: constants.SpriteSheet,
-					Name:  "block.png",
-					Scale: gms.gs.Min,
-				},
-				geometry.Point{
-					X: px,
-					Y: py,
-				},
-				movement.Movement{
-					Amount: geometry.Point{
-						X: -blockSpeed * gms.gs.Point.X,
-					},
-				},
-				effects.Layer{Depth: 0},
-			)
+			ent := gms.addEntity(world, c, r, offset)
+
+			ent.Add(sprite.Sprite{
+				Sheet: constants.SpriteSheet,
+				Name:  blockSprite,
+				Scale: gms.gs.Min,
+			})
+
+			ent.Add(effects.Layer{Depth: 0})
+			gms.sprs[c][r] = ent
 		}
 	}
+}
+
+func (gms *gameMapSystem) addEntity(world *goecs.World, col, row int, offset float32) *goecs.Entity {
+	px := float32(col) * (gms.blockSize.Width * gms.gs.Point.X)
+	px += (gms.blockSize.Width / 2) * gms.gs.Point.X
+	px += offset
+	py := float32(row) * (gms.blockSize.Height * gms.gs.Point.Y)
+	py += (gms.blockSize.Height / 2) * gms.gs.Point.Y
+
+	return world.AddEntity(
+		geometry.Point{
+			X: px,
+			Y: py,
+		},
+		movement.Movement{
+			Amount: geometry.Point{
+				X: -blockSpeed * gms.gs.Point.X,
+			},
+		},
+	)
+}
+
+func (gms *gameMapSystem) cursorSystem(world *goecs.World, delta float32) error {
+	pos := geometry.Get.Point(gms.scrollMarker)
+	x := gms.planePos.X - pos.X
+	y := gms.planePos.Y - pos.Y
+	c := int(x / (gms.blockSize.Width * gms.gs.Point.X))
+	r := int(y / (gms.blockSize.Height * gms.gs.Point.Y))
+
+	found := false
+	var sc = c
+	for sc = c; sc < gms.cols; sc++ {
+		if sc >= 0 {
+			if gms.data[sc][r] != empty {
+				pos := geometry.Get.Point(gms.sprs[sc][r])
+				if pos.X < (gms.dr.Width * gms.gs.Point.X) {
+					found = true
+					gms.cursor.Set(geometry.Point{
+						X: pos.X - (gms.blockSize.Width * gms.gs.Point.X),
+						Y: pos.Y,
+					})
+				}
+				break
+			}
+		}
+	}
+
+	if !found {
+		gms.cursor.Set(geometry.Point{
+			X: gms.planePos.X,
+			Y: gms.planePos.Y,
+		})
+	}
+
+	return nil
+}
+
+func (gms *gameMapSystem) planeChanges(_ *goecs.World, signal interface{}, _ float32) error {
+	switch e := signal.(type) {
+	case plane.PositionChangeEvent:
+		gms.planePos = e.Pos
+	}
+	return nil
 }
 
 // System create the map system
