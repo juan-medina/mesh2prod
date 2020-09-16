@@ -53,6 +53,8 @@ const (
 const (
 	blockSpeed  = 50
 	blockSprite = "block.png"
+	markSprite  = "mark.png"
+	blockScale  = 0.5
 )
 
 type gameMapSystem struct {
@@ -328,14 +330,14 @@ func (gms *gameMapSystem) addSprites(world *goecs.World) {
 
 	gms.cursor.Add(sprite.Sprite{
 		Sheet: constants.SpriteSheet,
-		Name:  blockSprite,
-		Scale: gms.gs.Min,
+		Name:  markSprite,
+		Scale: gms.gs.Min * blockScale,
 	})
-	gms.cursor.Add(effects.Layer{Depth: 1})
+	gms.cursor.Add(effects.Layer{Depth: 0})
 	gms.cursor.Add(color.Red)
 	gms.cursor.Add(effects.AlternateColor{
 		From:  color.Red,
-		To:    color.Red.Alpha(127),
+		To:    color.Red.Alpha(180),
 		Time:  0.25,
 		Delay: 0,
 	})
@@ -351,7 +353,14 @@ func (gms *gameMapSystem) addSprites(world *goecs.World) {
 			ent.Add(sprite.Sprite{
 				Sheet: constants.SpriteSheet,
 				Name:  blockSprite,
-				Scale: gms.gs.Min,
+				Scale: gms.gs.Min * blockScale,
+			})
+
+			ent.Add(effects.AlternateColor{
+				From:  color.Gopher,
+				To:    color.SkyBlue,
+				Time:  0.25,
+				Delay: 0,
 			})
 
 			ent.Add(effects.Layer{Depth: 0})
@@ -361,11 +370,11 @@ func (gms *gameMapSystem) addSprites(world *goecs.World) {
 }
 
 func (gms *gameMapSystem) addEntity(world *goecs.World, col, row int, offset float32) *goecs.Entity {
-	px := float32(col) * (gms.blockSize.Width * gms.gs.Point.X)
-	px += (gms.blockSize.Width / 2) * gms.gs.Point.X
+	px := float32(col) * (gms.blockSize.Width * gms.gs.Point.X * blockScale)
+	px += (gms.blockSize.Width / 2) * gms.gs.Point.X * blockScale
 	px += offset
-	py := float32(row) * (gms.blockSize.Height * gms.gs.Point.Y)
-	py += (gms.blockSize.Height / 2) * gms.gs.Point.Y
+	py := float32(row) * (gms.blockSize.Height * gms.gs.Point.Y * blockScale)
+	py += (gms.blockSize.Height / 2) * gms.gs.Point.Y * blockScale
 
 	return world.AddEntity(
 		geometry.Point{
@@ -384,8 +393,8 @@ func (gms *gameMapSystem) cursorSystem(world *goecs.World, delta float32) error 
 	pos := geometry.Get.Point(gms.scrollMarker)
 	x := gms.planePos.X - pos.X
 	y := gms.planePos.Y - pos.Y
-	c := int(x / (gms.blockSize.Width * gms.gs.Point.X))
-	r := int(y / (gms.blockSize.Height * gms.gs.Point.Y))
+	c := int(x / (gms.blockSize.Width * gms.gs.Point.X * blockScale))
+	r := int(y / (gms.blockSize.Height * gms.gs.Point.Y * blockScale))
 
 	found := false
 	var sc = c
@@ -396,7 +405,7 @@ func (gms *gameMapSystem) cursorSystem(world *goecs.World, delta float32) error 
 				if pos.X < (gms.dr.Width * gms.gs.Point.X) {
 					found = true
 					gms.cursor.Set(geometry.Point{
-						X: pos.X - (gms.blockSize.Width * gms.gs.Point.X),
+						X: pos.X - (gms.blockSize.Width * gms.gs.Point.X * blockScale),
 						Y: pos.Y,
 					})
 				}
@@ -407,8 +416,8 @@ func (gms *gameMapSystem) cursorSystem(world *goecs.World, delta float32) error 
 
 	if !found {
 		gms.cursor.Set(geometry.Point{
-			X: gms.planePos.X,
-			Y: gms.planePos.Y,
+			X: -1000,
+			Y: -1000,
 		})
 	}
 
