@@ -28,6 +28,7 @@ import (
 	"github.com/juan-medina/gosge/events"
 	"github.com/juan-medina/mesh2prod/game/background"
 	"github.com/juan-medina/mesh2prod/game/constants"
+	"github.com/juan-medina/mesh2prod/game/gamemap"
 	"github.com/juan-medina/mesh2prod/game/mesh"
 	"github.com/juan-medina/mesh2prod/game/movement"
 	"github.com/juan-medina/mesh2prod/game/plane"
@@ -78,6 +79,11 @@ func Load(eng *gosge.Engine) error {
 
 	// add the mesh
 	if err = mesh.System(eng, gameScale, designResolution); err != nil {
+		return err
+	}
+
+	// add the map
+	if err = gamemap.System(eng, gameScale, designResolution); err != nil {
 		return err
 	}
 
