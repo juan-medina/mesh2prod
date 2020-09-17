@@ -30,6 +30,7 @@ import (
 	"github.com/juan-medina/gosge/components/color"
 	"github.com/juan-medina/gosge/components/effects"
 	"github.com/juan-medina/gosge/components/geometry"
+	"github.com/juan-medina/gosge/components/shapes"
 	"github.com/juan-medina/gosge/components/sprite"
 	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
@@ -49,7 +50,7 @@ const (
 	clear
 )
 
-// game constants
+// logic constants
 const (
 	blockSpeed  = 50
 	blockSprite = "block.png"
@@ -66,8 +67,9 @@ type gameMapSystem struct {
 	dr           geometry.Size
 	blockSize    geometry.Size
 	scrollMarker *goecs.Entity
-	planePos     geometry.Point
+	gunPos       geometry.Point
 	cursor       *goecs.Entity
+	line         *goecs.Entity
 }
 
 func (gms gameMapSystem) String() string {
@@ -151,24 +153,28 @@ func (gms *gameMapSystem) add(col, row int, piece [][]blocState) {
 }
 
 func (gms gameMapSystem) canClearArea(fromC, fromR, toC, toR int) bool {
+	// top row
 	for c := fromC; c <= toC; c++ {
 		if gms.data[c][fromR] == empty {
 			return false
 		}
 	}
 
+	// bottom row
 	for c := fromC; c <= toC; c++ {
 		if gms.data[c][toR] == empty {
 			return false
 		}
 	}
 
+	// left column
 	for r := fromR; r <= toR; r++ {
 		if gms.data[fromC][r] == empty {
 			return false
 		}
 	}
 
+	// right column
 	for r := fromR; r <= toR; r++ {
 		if gms.data[toC][r] == empty {
 			return false
@@ -342,6 +348,14 @@ func (gms *gameMapSystem) addSprites(world *goecs.World) {
 		Delay: 0,
 	})
 
+	gms.line = gms.addEntity(world, 0, 0, offset)
+	gms.line.Add(color.Red.Alpha(127))
+	gms.line.Add(shapes.Line{
+		To:        geometry.Point{},
+		Thickness: 2,
+	})
+	gms.line.Add(effects.Layer{Depth: 0})
+
 	for c := 0; c < gms.cols; c++ {
 		for r := 0; r < gms.rows; r++ {
 			if gms.data[c][r] == empty {
@@ -389,12 +403,17 @@ func (gms *gameMapSystem) addEntity(world *goecs.World, col, row int, offset flo
 	)
 }
 
-func (gms *gameMapSystem) cursorSystem(world *goecs.World, delta float32) error {
+func (gms *gameMapSystem) cursorSystem(_ *goecs.World, _ float32) error {
 	pos := geometry.Get.Point(gms.scrollMarker)
-	x := gms.planePos.X - pos.X
-	y := gms.planePos.Y - pos.Y
+	x := gms.gunPos.X - pos.X
+	y := gms.gunPos.Y - pos.Y
 	c := int(x / (gms.blockSize.Width * gms.gs.Point.X * blockScale))
 	r := int(y / (gms.blockSize.Height * gms.gs.Point.Y * blockScale))
+
+	linePosFrom := geometry.Get.Point(gms.line)
+	linePosFrom.X = gms.gunPos.X
+	linePosFrom.Y = gms.gunPos.Y
+	line := shapes.Get.Line(gms.line)
 
 	found := false
 	var sc = c
@@ -402,12 +421,19 @@ func (gms *gameMapSystem) cursorSystem(world *goecs.World, delta float32) error 
 		if sc >= 0 {
 			if gms.data[sc][r] != empty {
 				pos := geometry.Get.Point(gms.sprs[sc][r])
-				if pos.X < (gms.dr.Width * gms.gs.Point.X) {
+				if pos.X > (gms.gunPos.X+(gms.blockSize.Width*blockScale*gms.gs.Point.X)) &&
+					(pos.X < (gms.dr.Width * gms.gs.Point.X)) {
 					found = true
-					gms.cursor.Set(geometry.Point{
+					cursorPos := geometry.Point{
 						X: pos.X - (gms.blockSize.Width * gms.gs.Point.X * blockScale),
 						Y: pos.Y,
-					})
+					}
+					gms.cursor.Set(cursorPos)
+					line.To = geometry.Point{
+						X: cursorPos.X - (gms.blockSize.Width/2)*blockScale*gms.gs.Point.X,
+						Y: cursorPos.Y,
+					}
+					//linePosFrom.Y = cursorPos.Y
 				}
 				break
 			}
@@ -419,7 +445,15 @@ func (gms *gameMapSystem) cursorSystem(world *goecs.World, delta float32) error 
 			X: -1000,
 			Y: -1000,
 		})
+
+		line.To = geometry.Point{
+			X: gms.dr.Width * gms.gs.Point.X,
+			Y: gms.gunPos.Y,
+		}
 	}
+
+	gms.line.Set(linePosFrom)
+	gms.line.Set(line)
 
 	return nil
 }
@@ -427,7 +461,7 @@ func (gms *gameMapSystem) cursorSystem(world *goecs.World, delta float32) error 
 func (gms *gameMapSystem) planeChanges(_ *goecs.World, signal interface{}, _ float32) error {
 	switch e := signal.(type) {
 	case plane.PositionChangeEvent:
-		gms.planePos = e.Pos
+		gms.gunPos = e.Gun
 	}
 	return nil
 }

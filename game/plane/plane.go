@@ -39,11 +39,13 @@ const (
 	gopherPlaneAnim = "gopher_plane_%d.png" // base animation for our gopher
 	planeScale      = float32(0.5)          // plane scale
 	planeX          = 720                   // plane X position
-	planeSpeed      = 450                   // plane speed
+	planeSpeed      = 320                   // plane speed
 	animSpeedSlow   = 0.65                  // animation slow speed
 	animSpeedFast   = 1                     // animation fast speed
 	joinShiftX      = 20                    // shift in X for the joint
 	joinShiftY      = 5                     // shift in Y for the joint
+	gunShiftX       = 70                    // shift in x for the gun
+	gunShiftY       = 50                    // shift in in for the gun
 )
 
 type planeSystem struct {
@@ -160,11 +162,18 @@ func (ps *planeSystem) notifyPositionChanges(world *goecs.World, _ float32) erro
 
 	if current.X != ps.lastPos.X || current.Y != ps.lastPos.Y {
 		ps.lastPos = current
+
 		joint := geometry.Point{
 			X: current.X - (((ps.size.Width / 2) - joinShiftX) * planeScale * ps.gs.Point.X),
 			Y: current.Y - (joinShiftY * planeScale * ps.gs.Point.Y),
 		}
-		return world.Signal(PositionChangeEvent{Pos: current, Joint: joint})
+
+		gun := geometry.Point{
+			X: current.X + (gunShiftX * planeScale * ps.gs.Point.X),
+			Y: current.Y + (gunShiftY * planeScale * ps.gs.Point.Y),
+		}
+
+		return world.Signal(PositionChangeEvent{Pos: current, Joint: joint, Gun: gun})
 	}
 
 	return nil
@@ -185,4 +194,5 @@ func System(engine *gosge.Engine, gs geometry.Scale, dr geometry.Size) error {
 type PositionChangeEvent struct {
 	Pos   geometry.Point // Pos is where ir our plane is
 	Joint geometry.Point // Joint is the joint point for our plane
+	Gun   geometry.Point // Gun is the gun point for our plane
 }
