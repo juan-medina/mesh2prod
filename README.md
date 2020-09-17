@@ -63,7 +63,7 @@ You can also build binary in [MSYS2](https://msys2.github.io/) shell.
     - https://awesomeopensource.com/project/egonelbre/gophers
 - Game art 2D:
     - https://www.gameart2d.com
--  Mobile Game Graphics
+- Mobile Game Graphics
     - https://mobilegamegraphics.com/product/free-parallax-backgrounds
 - Of Far Different Nature Music Loops
     - https://fardifferent.itch.io/loops
@@ -71,3 +71,5 @@ You can also build binary in [MSYS2](https://msys2.github.io/) shell.
     - https://freesound.org/people/SKKreativ/sounds/456255/
 - opengameart.org
     - https://opengameart.org/content/scratched-metal-crate
+- GameSupplyGuy
+    - https://gamesupply.itch.io/fruits-and-vegetables
