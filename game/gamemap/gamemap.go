@@ -319,7 +319,21 @@ func (gms *gameMapSystem) generate() {
 		{1, 1},
 	}
 
-	// set o fpieces
+	piece8 := [][]blocState{
+		{1, 1, 1, 1},
+		{0, 1, 1, 1},
+		{0, 0, 1, 1},
+		{0, 0, 0, 1},
+	}
+
+	piece9 := [][]blocState{
+		{0, 0, 0, 1},
+		{0, 0, 1, 1},
+		{0, 1, 1, 1},
+		{1, 1, 1, 1},
+	}
+
+	// set o pieces
 	pieces := [][][]blocState{
 		piece1,
 		piece2,
@@ -328,6 +342,8 @@ func (gms *gameMapSystem) generate() {
 		piece5,
 		piece6,
 		piece7,
+		piece8,
+		piece9,
 	}
 
 	// limits
