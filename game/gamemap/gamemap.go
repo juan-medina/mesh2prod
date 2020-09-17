@@ -56,6 +56,7 @@ const (
 	blockSprite = "block.png"
 	markSprite  = "mark.png"
 	blockScale  = 0.5
+	targetGapX  = 100
 )
 
 type gameMapSystem struct {
@@ -314,7 +315,7 @@ func (gms *gameMapSystem) generate() {
 
 	cc := 4
 	for cc < limitC {
-		num := 2 + rand.Intn(2)
+		num := 2 + rand.Intn(6)
 		for i := 0; i < num; i++ {
 			c := cc - rand.Intn(6)
 			p := rand.Intn(len(pieces))
@@ -421,7 +422,7 @@ func (gms *gameMapSystem) cursorSystem(_ *goecs.World, _ float32) error {
 		if sc >= 0 {
 			if gms.data[sc][r] != empty {
 				pos := geometry.Get.Point(gms.sprs[sc][r])
-				if pos.X > (gms.gunPos.X+(gms.blockSize.Width*blockScale*gms.gs.Point.X)) &&
+				if pos.X > (gms.gunPos.X+(targetGapX*gms.gs.Point.X)) &&
 					(pos.X < (gms.dr.Width * gms.gs.Point.X)) {
 					found = true
 					cursorPos := geometry.Point{
