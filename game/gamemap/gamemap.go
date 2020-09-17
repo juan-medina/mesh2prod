@@ -52,27 +52,28 @@ const (
 
 // logic constants
 const (
-	blockSpeed  = 50
-	blockSprite = "block.png"
-	markSprite  = "mark.png"
-	blockScale  = 0.5
-	targetGapX  = 100
+	blockSpeed  = 50          // our block speed
+	blockSprite = "block.png" // block sprite
+	markSprite  = "mark.png"  // mark sprite
+	blockScale  = 0.5         // block scale
+	targetGapX  = 100         // target gap from gun pos
 )
 
 type gameMapSystem struct {
-	rows         int
-	cols         int
-	data         [][]blocState
-	sprs         [][]*goecs.Entity
-	gs           geometry.Scale
-	dr           geometry.Size
-	blockSize    geometry.Size
-	scrollMarker *goecs.Entity
-	gunPos       geometry.Point
-	cursor       *goecs.Entity
-	line         *goecs.Entity
+	rows         int               // number of rows
+	cols         int               // number of cols
+	data         [][]blocState     // map block state
+	sprs         [][]*goecs.Entity // map sprites
+	gs           geometry.Scale    // game scale
+	dr           geometry.Size     // design resolution
+	blockSize    geometry.Size     // block size
+	scrollMarker *goecs.Entity     // track the scroll position
+	gunPos       geometry.Point    // plane gun position
+	target       *goecs.Entity     // current target position
+	line         *goecs.Entity     // target line
 }
 
+// generate a string for current map status
 func (gms gameMapSystem) String() string {
 	var result = ""
 	for r := 0; r < gms.rows; r++ {
@@ -90,10 +91,12 @@ func (gms gameMapSystem) String() string {
 	return result
 }
 
+// set the status on map block
 func (gms *gameMapSystem) set(c, r int, state blocState) {
 	gms.data[c][r] = state
 }
 
+// place a block and mark the block that need to be clear
 func (gms *gameMapSystem) place(c, r int) {
 	// we set this block to place
 	gms.data[c][r] = placed
@@ -143,6 +146,7 @@ func (gms *gameMapSystem) place(c, r int) {
 	}
 }
 
+// add a block in a position
 func (gms *gameMapSystem) add(col, row int, piece [][]blocState) {
 	for r := 0; r < len(piece); r++ {
 		for c := 0; c < len(piece[r]); c++ {
@@ -153,6 +157,7 @@ func (gms *gameMapSystem) add(col, row int, piece [][]blocState) {
 	}
 }
 
+// can we clear an area? is a square area
 func (gms gameMapSystem) canClearArea(fromC, fromR, toC, toR int) bool {
 	// top row
 	for c := fromC; c <= toC; c++ {
@@ -185,6 +190,7 @@ func (gms gameMapSystem) canClearArea(fromC, fromR, toC, toR int) bool {
 	return true
 }
 
+// clear the area
 func (gms *gameMapSystem) clearArea(fromC, fromR, toC, toR int) {
 	for c := fromC; c <= toC; c++ {
 		for r := fromR; r <= toR; r++ {
@@ -193,6 +199,7 @@ func (gms *gameMapSystem) clearArea(fromC, fromR, toC, toR int) {
 	}
 }
 
+// create a new game map
 func newGameMap(cols, rows int) *gameMapSystem {
 	data := make([][]blocState, cols)
 	sprs := make([][]*goecs.Entity, cols)
@@ -208,6 +215,7 @@ func newGameMap(cols, rows int) *gameMapSystem {
 	}
 }
 
+// create a map from an string
 func fromString(str string) *gameMapSystem {
 	scanner := bufio.NewScanner(strings.NewReader(str))
 	r := 0
@@ -238,26 +246,37 @@ func fromString(str string) *gameMapSystem {
 	return gm
 }
 
+// load the system
 func (gms *gameMapSystem) load(eng *gosge.Engine) error {
 	var err error
 
+	// get the block size
 	if gms.blockSize, err = eng.GetSpriteSize(constants.SpriteSheet, blockSprite); err != nil {
 		return err
 	}
 
+	// generate a random map
 	gms.generate()
 
+	// get the world
 	world := eng.World()
 
+	// add the sprites from the current state
 	gms.addSprites(world)
-	world.AddSystem(gms.cursorSystem)
+
+	// add the target system that target blocks
+	world.AddSystem(gms.targetSystem)
+
+	// listen to plane changes
 	world.AddListener(gms.planeChanges)
 
 	return nil
 }
 
+// generate a random map
 func (gms *gameMapSystem) generate() {
 
+	// pieces
 	piece1 := [][]blocState{
 		{0, 1},
 		{1, 1},
@@ -300,6 +319,7 @@ func (gms *gameMapSystem) generate() {
 		{1, 1},
 	}
 
+	// set o fpieces
 	pieces := [][][]blocState{
 		piece1,
 		piece2,
@@ -310,45 +330,58 @@ func (gms *gameMapSystem) generate() {
 		piece7,
 	}
 
+	// limits
 	limitR := gms.rows - 8
 	limitC := gms.cols - 8
 
+	// we start on column 4
 	cc := 4
 	for cc < limitC {
+		// random number of pieces
 		num := 2 + rand.Intn(6)
+		// fil the pieces
 		for i := 0; i < num; i++ {
+			// random shift of column
 			c := cc - rand.Intn(6)
+			// random piece
 			p := rand.Intn(len(pieces))
+			// random shift of row
 			r := 4 + rand.Intn(limitR)
+			// add piece
 			gms.add(c, r, pieces[p])
 		}
 
+		// advance column random
 		cc += 15 + rand.Intn(5)
 	}
 
 }
 
+// add sprite from map state
 func (gms *gameMapSystem) addSprites(world *goecs.World) {
 	offset := gms.dr.Width * .85 * gms.gs.Point.X
 
+	// add a scroll marker
 	gms.scrollMarker = gms.addEntity(world, 0, 0, offset)
 
-	gms.cursor = gms.addEntity(world, 0, 0, offset)
+	// add our target
+	gms.target = gms.addEntity(world, 0, 0, offset)
 
-	gms.cursor.Add(sprite.Sprite{
+	gms.target.Add(sprite.Sprite{
 		Sheet: constants.SpriteSheet,
 		Name:  markSprite,
 		Scale: gms.gs.Min * blockScale,
 	})
-	gms.cursor.Add(effects.Layer{Depth: 0})
-	gms.cursor.Add(color.Red)
-	gms.cursor.Add(effects.AlternateColor{
+	gms.target.Add(effects.Layer{Depth: 0})
+	gms.target.Add(color.Red)
+	gms.target.Add(effects.AlternateColor{
 		From:  color.Red,
 		To:    color.Red.Alpha(180),
 		Time:  0.25,
 		Delay: 0,
 	})
 
+	// add the target line
 	gms.line = gms.addEntity(world, 0, 0, offset)
 	gms.line.Add(color.Red.Alpha(127))
 	gms.line.Add(shapes.Line{
@@ -357,12 +390,15 @@ func (gms *gameMapSystem) addSprites(world *goecs.World) {
 	})
 	gms.line.Add(effects.Layer{Depth: 0})
 
+	// for each column row
 	for c := 0; c < gms.cols; c++ {
 		for r := 0; r < gms.rows; r++ {
+			// if empty skip
 			if gms.data[c][r] == empty {
 				continue
 			}
 
+			// create a sprite
 			ent := gms.addEntity(world, c, r, offset)
 
 			ent.Add(sprite.Sprite{
@@ -384,6 +420,7 @@ func (gms *gameMapSystem) addSprites(world *goecs.World) {
 	}
 }
 
+// create a entity on that col and row, with movement
 func (gms *gameMapSystem) addEntity(world *goecs.World, col, row int, offset float32) *goecs.Entity {
 	px := float32(col) * (gms.blockSize.Width * gms.gs.Point.X * blockScale)
 	px += (gms.blockSize.Width / 2) * gms.gs.Point.X * blockScale
@@ -404,64 +441,83 @@ func (gms *gameMapSystem) addEntity(world *goecs.World, col, row int, offset flo
 	)
 }
 
-func (gms *gameMapSystem) cursorSystem(_ *goecs.World, _ float32) error {
+// a system that target a block
+func (gms *gameMapSystem) targetSystem(_ *goecs.World, _ float32) error {
+	// get the current scroll
 	pos := geometry.Get.Point(gms.scrollMarker)
+	// get displacement for our gun
 	x := gms.gunPos.X - pos.X
 	y := gms.gunPos.Y - pos.Y
+	// calculate row and column
 	c := int(x / (gms.blockSize.Width * gms.gs.Point.X * blockScale))
 	r := int(y / (gms.blockSize.Height * gms.gs.Point.Y * blockScale))
 
+	// get the line from
 	linePosFrom := geometry.Get.Point(gms.line)
 	linePosFrom.X = gms.gunPos.X
 	linePosFrom.Y = gms.gunPos.Y
+	// get the line component
 	line := shapes.Get.Line(gms.line)
 
+	// try to find a target
 	found := false
 	var sc = c
+	// goes trough the rows
 	for sc = c; sc < gms.cols; sc++ {
 		if sc >= 0 {
+			// if the block is no empty
 			if gms.data[sc][r] != empty {
 				pos := geometry.Get.Point(gms.sprs[sc][r])
+				// if we are withing the gap and the screen size
 				if pos.X > (gms.gunPos.X+(targetGapX*gms.gs.Point.X)) &&
 					(pos.X < (gms.dr.Width * gms.gs.Point.X)) {
+					// found it
 					found = true
-					cursorPos := geometry.Point{
+					// calculate target pos
+					targetPos := geometry.Point{
 						X: pos.X - (gms.blockSize.Width * gms.gs.Point.X * blockScale),
 						Y: pos.Y,
 					}
-					gms.cursor.Set(cursorPos)
+					gms.target.Set(targetPos)
+					// calculate line pos
 					line.To = geometry.Point{
-						X: cursorPos.X - (gms.blockSize.Width/2)*blockScale*gms.gs.Point.X,
-						Y: cursorPos.Y,
+						X: targetPos.X - (gms.blockSize.Width/2)*blockScale*gms.gs.Point.X,
+						Y: targetPos.Y,
 					}
-					//linePosFrom.Y = cursorPos.Y
 				}
+				// it was a block no empty, skip
 				break
 			}
 		}
 	}
 
+	// if we have no a target
 	if !found {
-		gms.cursor.Set(geometry.Point{
+		// move target ouf ot screen
+		gms.target.Set(geometry.Point{
 			X: -1000,
 			Y: -1000,
 		})
 
+		// move line straight from gun
 		line.To = geometry.Point{
 			X: gms.dr.Width * gms.gs.Point.X,
 			Y: gms.gunPos.Y,
 		}
 	}
 
+	// update line
 	gms.line.Set(linePosFrom)
 	gms.line.Set(line)
 
 	return nil
 }
 
+// if the plane change position
 func (gms *gameMapSystem) planeChanges(_ *goecs.World, signal interface{}, _ float32) error {
 	switch e := signal.(type) {
 	case plane.PositionChangeEvent:
+		// store gun position
 		gms.gunPos = e.Gun
 	}
 	return nil
