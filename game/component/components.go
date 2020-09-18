@@ -27,39 +27,44 @@ import (
 	"reflect"
 )
 
-// Type represents a Tag type
-type Type int
-
-// Tag Types
-//goland:noinspection GoUnusedConst
-const (
-	None       = Type(iota) // None tag
-	BulletType              // Bullet tag
-)
-
 // Bullet is a component for our bullets
 type Bullet struct{}
+
+// Block is a component for a map blocks
+type Block struct {
+	C, R      int
+	ClearTime float32
+}
 
 type types struct {
 	// Bullet is the reflect.Type for component.Bullet
 	Bullet reflect.Type
+	// Block is the reflect.Type for component.Block
+	Block reflect.Type
 }
 
 // TYPE hold the reflect.Type for our components
 var TYPE = types{
 	Bullet: reflect.TypeOf(Bullet{}),
+	Block:  reflect.TypeOf(Block{}),
 }
 
 type gets struct {
 	// Bullet gets a component.Bullet from a goecs.Entity
 	Bullet func(e *goecs.Entity) Bullet
+	// Block gets a component.Block from a goecs.Entity
+	Block func(e *goecs.Entity) Block
 }
 
 // Get a geometry component
 //goland:noinspection GoUnusedGlobalVariable
 var Get = gets{
-	// Point gets a component.Bullet from a goecs.Entity
+	// Bullet gets a component.Bullet from a goecs.Entity
 	Bullet: func(e *goecs.Entity) Bullet {
 		return e.Get(TYPE.Bullet).(Bullet)
+	},
+	// Bullet gets a component.Bullet from a goecs.Entity
+	Block: func(e *goecs.Entity) Block {
+		return e.Get(TYPE.Block).(Block)
 	},
 }

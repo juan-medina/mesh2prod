@@ -27,6 +27,7 @@ import (
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/events"
 	"github.com/juan-medina/mesh2prod/game/background"
+	"github.com/juan-medina/mesh2prod/game/collision"
 	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/gamemap"
 	"github.com/juan-medina/mesh2prod/game/mesh"
@@ -84,6 +85,11 @@ func Load(eng *gosge.Engine) error {
 
 	// add the map
 	if err = gamemap.System(eng, gameScale, designResolution); err != nil {
+		return err
+	}
+
+	// add the collision system
+	if err = collision.System(eng); err != nil {
 		return err
 	}
 

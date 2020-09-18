@@ -35,13 +35,16 @@ import (
 	"github.com/juan-medina/gosge/components/shapes"
 	"github.com/juan-medina/gosge/components/sprite"
 	"github.com/juan-medina/gosge/events"
+	"github.com/juan-medina/mesh2prod/game/collision"
 	"github.com/juan-medina/mesh2prod/game/component"
 	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
 	"github.com/juan-medina/mesh2prod/game/plane"
+	"math"
 	"math/rand"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type blocState int
@@ -56,7 +59,7 @@ const (
 
 // logic constants
 const (
-	blockSpeed        = 50              // our block speed
+	blockSpeed        = 25              // our block speed
 	blockSprite       = "block.png"     // block sprite
 	markSprite        = "mark.png"      // mark sprite
 	blockScale        = 0.5             // block scale
@@ -65,7 +68,8 @@ const (
 	bulletScale       = 0.25            // scale for the bullet sprite
 	bulletFrames      = 5               // bullet frames
 	bulletFramesDelay = 0.065           // bullet frame delay
-	bulletSpeed       = 400             // bullet speed
+	bulletSpeed       = 600             // bullet speed
+	clearTime         = 2               // clear time
 )
 
 var (
@@ -171,7 +175,7 @@ func (gms *gameMapSystem) add(col, row int, piece [][]blocState) {
 }
 
 // can we clear an area? is a square area
-func (gms gameMapSystem) canClearArea(fromC, fromR, toC, toR int) bool {
+func (gms *gameMapSystem) canClearArea(fromC, fromR, toC, toR int) bool {
 	// top row
 	for c := fromC; c <= toC; c++ {
 		if gms.data[c][fromR] == empty {
@@ -208,6 +212,19 @@ func (gms *gameMapSystem) clearArea(fromC, fromR, toC, toR int) {
 	for c := fromC; c <= toC; c++ {
 		for r := fromR; r <= toR; r++ {
 			gms.data[c][r] = clear
+			block := component.Get.Block(gms.sprs[c][r])
+			block.ClearTime = clearTime
+			gms.sprs[c][r].Set(block)
+			gms.sprs[c][r].Remove(color.TYPE.Solid)
+			gms.sprs[c][r].Remove(effects.TYPE.AlternateColor)
+			gms.sprs[c][r].Remove(effects.TYPE.AlternateColorState)
+			gms.sprs[c][r].Set(effects.AlternateColor{
+				From:  color.Red,
+				To:    color.SkyBlue,
+				Time:  0.25,
+				Delay: 0,
+			})
+
 		}
 	}
 }
@@ -261,6 +278,7 @@ func fromString(str string) *gameMapSystem {
 
 // load the system
 func (gms *gameMapSystem) load(eng *gosge.Engine) error {
+	rand.Seed(time.Now().UnixNano())
 	var err error
 
 	// get the block size
@@ -283,18 +301,23 @@ func (gms *gameMapSystem) load(eng *gosge.Engine) error {
 	// add the bullet system
 	world.AddSystem(gms.bulletSystem)
 
+	// clear block systems
+	world.AddSystem(gms.clearSystem)
+
 	// listen to plane changes
 	world.AddListener(gms.planeChanges)
 
 	// listen to keys
 	world.AddListener(gms.keyListener)
 
+	// listen to collisions
+	world.AddListener(gms.collisionListener)
+
 	return nil
 }
 
 // generate a random map
 func (gms *gameMapSystem) generate() {
-
 	// pieces
 	piece1 := [][]blocState{
 		{0, 1},
@@ -370,7 +393,7 @@ func (gms *gameMapSystem) generate() {
 	limitC := gms.cols - 8
 
 	// we start on column 4
-	cc := 4
+	cc := 6
 	for cc < limitC {
 		// random number of pieces
 		num := 2 + rand.Intn(6)
@@ -389,7 +412,6 @@ func (gms *gameMapSystem) generate() {
 		// advance column random
 		cc += 15 + rand.Intn(5)
 	}
-
 }
 
 // add sprite from map state
@@ -450,6 +472,10 @@ func (gms *gameMapSystem) addSprites(world *goecs.World) {
 			})
 
 			ent.Add(effects.Layer{Depth: 0})
+			ent.Add(component.Block{
+				C: c,
+				R: r,
+			})
 			gms.sprs[c][r] = ent
 		}
 	}
@@ -481,11 +507,19 @@ func (gms *gameMapSystem) targetSystem(_ *goecs.World, _ float32) error {
 	// get the current scroll
 	pos := geometry.Get.Point(gms.scrollMarker)
 	// get displacement for our gun
-	x := gms.gunPos.X - pos.X
-	y := gms.gunPos.Y - pos.Y
+	x := gms.gunPos.X - (pos.X - (gms.blockSize.Width / 2))
+	y := gms.gunPos.Y - (pos.Y - (gms.blockSize.Height / 2))
 	// calculate row and column
-	c := int(x / (gms.blockSize.Width * gms.gs.Point.X * blockScale))
-	r := int(y / (gms.blockSize.Height * gms.gs.Point.Y * blockScale))
+	c := int(x / (gms.blockSize.Width * blockScale * gms.gs.Point.X))
+	r := int(y / (gms.blockSize.Height * blockScale * gms.gs.Point.Y))
+
+	if c < 0 {
+		c = 0
+	}
+
+	if r < 0 {
+		r = 0
+	}
 
 	// get the line from
 	linePosFrom := geometry.Get.Point(gms.line)
@@ -580,6 +614,7 @@ func (gms gameMapSystem) createBullet(world *goecs.World) {
 		minY := gms.gunPos.Y
 		maxY := targetPos.Y
 		velY := maxY - minY
+		velY = float32(float64(velY)/math.Abs(float64(velY))) * bulletSpeed * 10
 		if minY > maxY {
 			aux := minY
 			minY = maxY
@@ -603,8 +638,8 @@ func (gms gameMapSystem) createBullet(world *goecs.World) {
 			gms.gunPos,
 			movement.Movement{
 				Amount: geometry.Point{
-					Y: velY,
-					X: bulletSpeed,
+					Y: velY * gms.gs.Point.Y,
+					X: bulletSpeed * gms.gs.Point.X,
 				},
 			},
 			movement.Constrain{
@@ -630,6 +665,58 @@ func (gms *gameMapSystem) bulletSystem(world *goecs.World, _ float32) error {
 		pos := geometry.Get.Point(bullet)
 		if pos.X >= gms.dr.Width*gms.gs.Point.X {
 			_ = world.Remove(bullet)
+		}
+	}
+	return nil
+}
+
+func (gms *gameMapSystem) collisionListener(world *goecs.World, signal interface{}, _ float32) error {
+	switch e := signal.(type) {
+	case collision.BulletHitBlockEvent:
+		// get the current scroll
+		pos := geometry.Get.Point(gms.scrollMarker)
+		c := e.Block.C - 1
+		r := e.Block.R
+		if c > 0 {
+			x := pos.X - gms.blockSize.Width*0.5*blockScale*gms.gs.Point.X
+
+			// create a sprite
+			nb := gms.addEntity(world, c, r, x)
+
+			nb.Add(sprite.Sprite{
+				Sheet: constants.SpriteSheet,
+				Name:  blockSprite,
+				Scale: gms.gs.Min * blockScale,
+			})
+
+			nb.Add(color.Red)
+
+			nb.Add(effects.Layer{Depth: 0})
+			nb.Add(component.Block{
+				C: c,
+				R: r,
+			})
+			gms.sprs[c][r] = nb
+			gms.place(c, r)
+		}
+
+	}
+
+	return nil
+}
+
+func (gms *gameMapSystem) clearSystem(world *goecs.World, delta float32) error {
+	for it := world.Iterator(component.TYPE.Block); it != nil; it = it.Next() {
+		ent := it.Value()
+		block := component.Get.Block(ent)
+		if gms.data[block.C][block.R] == clear {
+			block.ClearTime -= delta
+			ent.Set(block)
+			if block.ClearTime <= 0 {
+				_ = world.Remove(ent)
+				gms.data[block.C][block.R] = empty
+				gms.sprs[block.C][block.R] = nil
+			}
 		}
 	}
 	return nil
