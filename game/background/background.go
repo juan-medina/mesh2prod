@@ -44,10 +44,6 @@ const (
 	cloudDiffSpeed = 60  // difference of speed per Layer
 )
 
-var (
-	cloudTransparency = color.White.Alpha(235) // our cloud transparency
-)
-
 type bgSystem struct {
 	gs  geometry.Scale
 	dr  geometry.Size
@@ -83,11 +79,13 @@ func (bs *bgSystem) load(eng *gosge.Engine) error {
 
 	// for each layer
 	for ln := 0; ln < cloudLayers; ln++ {
+		alpha := 180 - uint8((float32(ln)/cloudLayers)*100)
+		cloudAlpha := color.White.Alpha(alpha)
 		// for each number off cloud
 		for cn := 0; cn < numClouds; cn++ {
 			// add a cloud
 			ent = world.AddEntity(
-				cloudTransparency,
+				cloudAlpha,
 				effects.Layer{Depth: 1 + float32(ln)},
 			)
 			// set it random
@@ -97,7 +95,7 @@ func (bs *bgSystem) load(eng *gosge.Engine) error {
 
 			// add another cloud off-screen
 			ent = world.AddEntity(
-				cloudTransparency,
+				cloudAlpha,
 				effects.Layer{Depth: 1 + float32(ln)},
 			)
 			// set it random off screen
