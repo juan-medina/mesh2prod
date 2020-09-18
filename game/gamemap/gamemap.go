@@ -69,7 +69,6 @@ const (
 	bulletFrames      = 5               // bullet frames
 	bulletFramesDelay = 0.065           // bullet frame delay
 	bulletSpeed       = 600             // bullet speed
-	clearTime         = 2               // clear time
 )
 
 var (
@@ -88,6 +87,7 @@ type gameMapSystem struct {
 	gunPos       geometry.Point    // plane gun position
 	target       *goecs.Entity     // current target position
 	line         *goecs.Entity     // target line
+	lastShoot    float32
 }
 
 // generate a string for current map status
@@ -212,19 +212,19 @@ func (gms *gameMapSystem) clearArea(fromC, fromR, toC, toR int) {
 	for c := fromC; c <= toC; c++ {
 		for r := fromR; r <= toR; r++ {
 			gms.data[c][r] = clear
-			block := component.Get.Block(gms.sprs[c][r])
-			block.ClearTime = clearTime
-			gms.sprs[c][r].Set(block)
-			gms.sprs[c][r].Remove(color.TYPE.Solid)
-			gms.sprs[c][r].Remove(effects.TYPE.AlternateColor)
-			gms.sprs[c][r].Remove(effects.TYPE.AlternateColorState)
-			gms.sprs[c][r].Set(effects.AlternateColor{
-				From:  color.Red,
-				To:    color.SkyBlue,
-				Time:  0.25,
-				Delay: 0,
-			})
-
+			if gms.sprs[c][r] != nil {
+				block := component.Get.Block(gms.sprs[c][r])
+				gms.sprs[c][r].Set(block)
+				gms.sprs[c][r].Remove(color.TYPE.Solid)
+				gms.sprs[c][r].Remove(effects.TYPE.AlternateColor)
+				gms.sprs[c][r].Remove(effects.TYPE.AlternateColorState)
+				gms.sprs[c][r].Set(effects.AlternateColor{
+					From:  color.Red,
+					To:    color.SkyBlue,
+					Time:  0.25,
+					Delay: 0,
+				})
+			}
 		}
 	}
 }
@@ -600,6 +600,7 @@ func (gms *gameMapSystem) keyListener(world *goecs.World, signal interface{}, _ 
 		// if it space
 		if e.Key == device.KeySpace {
 			gms.createBullet(world)
+			gms.lastShoot = 0
 		}
 	}
 	return nil
@@ -706,19 +707,19 @@ func (gms *gameMapSystem) collisionListener(world *goecs.World, signal interface
 }
 
 func (gms *gameMapSystem) clearSystem(world *goecs.World, delta float32) error {
-	for it := world.Iterator(component.TYPE.Block); it != nil; it = it.Next() {
-		ent := it.Value()
-		block := component.Get.Block(ent)
-		if gms.data[block.C][block.R] == clear {
-			block.ClearTime -= delta
-			ent.Set(block)
-			if block.ClearTime <= 0 {
+	gms.lastShoot += delta
+	if gms.lastShoot > 2 {
+		for it := world.Iterator(component.TYPE.Block); it != nil; it = it.Next() {
+			ent := it.Value()
+			block := component.Get.Block(ent)
+			if gms.data[block.C][block.R] == clear {
 				_ = world.Remove(ent)
 				gms.data[block.C][block.R] = empty
 				gms.sprs[block.C][block.R] = nil
 			}
 		}
 	}
+
 	return nil
 }
 

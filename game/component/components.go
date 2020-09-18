@@ -32,8 +32,7 @@ type Bullet struct{}
 
 // Block is a component for a map blocks
 type Block struct {
-	C, R      int
-	ClearTime float32
+	C, R int
 }
 
 type types struct {
