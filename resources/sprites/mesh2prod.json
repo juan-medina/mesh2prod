@@ -176,6 +176,131 @@
       }
     },
     {
+      "filename": "bullet_1.png",
+      "frame": {
+        "x": 5,
+        "y": 723,
+        "w": 110,
+        "h": 115
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 110,
+        "h": 115
+      },
+      "sourceSize": {
+        "w": 110,
+        "h": 115
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "bullet_2.png",
+      "frame": {
+        "x": 125,
+        "y": 723,
+        "w": 110,
+        "h": 115
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 110,
+        "h": 115
+      },
+      "sourceSize": {
+        "w": 110,
+        "h": 115
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "bullet_3.png",
+      "frame": {
+        "x": 245,
+        "y": 723,
+        "w": 110,
+        "h": 115
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 110,
+        "h": 115
+      },
+      "sourceSize": {
+        "w": 110,
+        "h": 115
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "bullet_4.png",
+      "frame": {
+        "x": 365,
+        "y": 723,
+        "w": 110,
+        "h": 115
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 110,
+        "h": 115
+      },
+      "sourceSize": {
+        "w": 110,
+        "h": 115
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "bullet_5.png",
+      "frame": {
+        "x": 485,
+        "y": 723,
+        "w": 110,
+        "h": 115
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 110,
+        "h": 115
+      },
+      "sourceSize": {
+        "w": 110,
+        "h": 115
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
       "filename": "block.png",
       "frame": {
         "x": 807,
@@ -233,7 +358,7 @@
     "format": "RGBA8888",
     "size": {
       "w": 920,
-      "h": 746
+      "h": 843
     },
     "scale": 1
   }

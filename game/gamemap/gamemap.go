@@ -27,11 +27,14 @@ import (
 	"fmt"
 	"github.com/juan-medina/goecs"
 	"github.com/juan-medina/gosge"
+	"github.com/juan-medina/gosge/components/animation"
 	"github.com/juan-medina/gosge/components/color"
+	"github.com/juan-medina/gosge/components/device"
 	"github.com/juan-medina/gosge/components/effects"
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/components/shapes"
 	"github.com/juan-medina/gosge/components/sprite"
+	"github.com/juan-medina/gosge/events"
 	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
 	"github.com/juan-medina/mesh2prod/game/plane"
@@ -52,11 +55,20 @@ const (
 
 // logic constants
 const (
-	blockSpeed  = 50          // our block speed
-	blockSprite = "block.png" // block sprite
-	markSprite  = "mark.png"  // mark sprite
-	blockScale  = 0.5         // block scale
-	targetGapX  = 100         // target gap from gun pos
+	blockSpeed        = 50              // our block speed
+	blockSprite       = "block.png"     // block sprite
+	markSprite        = "mark.png"      // mark sprite
+	blockScale        = 0.5             // block scale
+	targetGapX        = 100             // target gap from gun pos
+	bulletSprite      = "bullet_%d.png" // bullet sprite base
+	bulletScale       = 0.25            // scale for the bullet sprite
+	bulletFrames      = 5               // bullet frames
+	bulletFramesDelay = 0.065           // bullet frame delay
+	bulletSpeed       = 400             // bullet speed
+)
+
+var (
+	bulletColor = color.Red.Alpha(180) // bullet color
 )
 
 type gameMapSystem struct {
@@ -269,6 +281,9 @@ func (gms *gameMapSystem) load(eng *gosge.Engine) error {
 
 	// listen to plane changes
 	world.AddListener(gms.planeChanges)
+
+	// listen to keys
+	world.AddListener(gms.keyListener)
 
 	return nil
 }
@@ -535,6 +550,67 @@ func (gms *gameMapSystem) planeChanges(_ *goecs.World, signal interface{}, _ flo
 	case plane.PositionChangeEvent:
 		// store gun position
 		gms.gunPos = e.Gun
+	}
+	return nil
+}
+
+// listen to keys
+func (gms *gameMapSystem) keyListener(world *goecs.World, signal interface{}, _ float32) error {
+	switch e := signal.(type) {
+	// if we got a key up
+	case events.KeyUpEvent:
+		// if it space
+		if e.Key == device.KeySpace {
+			// get target
+			targetPos := geometry.Get.Point(gms.target)
+			// if we have a target on the screen
+			if targetPos.X > 0 && targetPos.Y > 0 {
+				// calculate min / max y and velocity
+				minY := gms.gunPos.Y
+				maxY := targetPos.Y
+				velY := maxY - minY
+				if minY > maxY {
+					aux := minY
+					minY = maxY
+					maxY = aux
+				}
+				// add a bullet
+				world.AddEntity(
+					animation.Animation{
+						Sequences: map[string]animation.Sequence{
+							"moving": {
+								Sheet:  constants.SpriteSheet,
+								Base:   bulletSprite,
+								Scale:  gms.gs.Min * bulletScale,
+								Frames: bulletFrames,
+								Delay:  bulletFramesDelay,
+							},
+						},
+						Current: "moving",
+						Speed:   1,
+					},
+					gms.gunPos,
+					movement.Movement{
+						Amount: geometry.Point{
+							Y: velY,
+							X: bulletSpeed,
+						},
+					},
+					movement.Constrain{
+						Min: geometry.Point{
+							X: 0,
+							Y: minY,
+						},
+						Max: geometry.Point{
+							X: gms.dr.Width * gms.gs.Point.X,
+							Y: maxY,
+						},
+					},
+					bulletColor,
+					effects.Layer{Depth: 0},
+				)
+			}
+		}
 	}
 	return nil
 }
