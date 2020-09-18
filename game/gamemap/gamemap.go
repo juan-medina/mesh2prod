@@ -35,6 +35,7 @@ import (
 	"github.com/juan-medina/gosge/components/shapes"
 	"github.com/juan-medina/gosge/components/sprite"
 	"github.com/juan-medina/gosge/events"
+	"github.com/juan-medina/mesh2prod/game/component"
 	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
 	"github.com/juan-medina/mesh2prod/game/plane"
@@ -278,6 +279,9 @@ func (gms *gameMapSystem) load(eng *gosge.Engine) error {
 
 	// add the target system that target blocks
 	world.AddSystem(gms.targetSystem)
+
+	// add the bullet system
+	world.AddSystem(gms.bulletSystem)
 
 	// listen to plane changes
 	world.AddListener(gms.planeChanges)
@@ -561,55 +565,71 @@ func (gms *gameMapSystem) keyListener(world *goecs.World, signal interface{}, _ 
 	case events.KeyUpEvent:
 		// if it space
 		if e.Key == device.KeySpace {
-			// get target
-			targetPos := geometry.Get.Point(gms.target)
-			// if we have a target on the screen
-			if targetPos.X > 0 && targetPos.Y > 0 {
-				// calculate min / max y and velocity
-				minY := gms.gunPos.Y
-				maxY := targetPos.Y
-				velY := maxY - minY
-				if minY > maxY {
-					aux := minY
-					minY = maxY
-					maxY = aux
-				}
-				// add a bullet
-				world.AddEntity(
-					animation.Animation{
-						Sequences: map[string]animation.Sequence{
-							"moving": {
-								Sheet:  constants.SpriteSheet,
-								Base:   bulletSprite,
-								Scale:  gms.gs.Min * bulletScale,
-								Frames: bulletFrames,
-								Delay:  bulletFramesDelay,
-							},
-						},
-						Current: "moving",
-						Speed:   1,
+			gms.createBullet(world)
+		}
+	}
+	return nil
+}
+
+func (gms gameMapSystem) createBullet(world *goecs.World) {
+	// get target
+	targetPos := geometry.Get.Point(gms.target)
+	// if we have a target on the screen
+	if targetPos.X > 0 && targetPos.Y > 0 {
+		// calculate min / max y and velocity
+		minY := gms.gunPos.Y
+		maxY := targetPos.Y
+		velY := maxY - minY
+		if minY > maxY {
+			aux := minY
+			minY = maxY
+			maxY = aux
+		}
+		// add a bullet
+		world.AddEntity(
+			animation.Animation{
+				Sequences: map[string]animation.Sequence{
+					"moving": {
+						Sheet:  constants.SpriteSheet,
+						Base:   bulletSprite,
+						Scale:  gms.gs.Min * bulletScale,
+						Frames: bulletFrames,
+						Delay:  bulletFramesDelay,
 					},
-					gms.gunPos,
-					movement.Movement{
-						Amount: geometry.Point{
-							Y: velY,
-							X: bulletSpeed,
-						},
-					},
-					movement.Constrain{
-						Min: geometry.Point{
-							X: 0,
-							Y: minY,
-						},
-						Max: geometry.Point{
-							X: gms.dr.Width * gms.gs.Point.X,
-							Y: maxY,
-						},
-					},
-					bulletColor,
-					effects.Layer{Depth: 0},
-				)
-			}
+				},
+				Current: "moving",
+				Speed:   1,
+			},
+			gms.gunPos,
+			movement.Movement{
+				Amount: geometry.Point{
+					Y: velY,
+					X: bulletSpeed,
+				},
+			},
+			movement.Constrain{
+				Min: geometry.Point{
+					X: 0,
+					Y: minY,
+				},
+				Max: geometry.Point{
+					X: gms.dr.Width * gms.gs.Point.X,
+					Y: maxY,
+				},
+			},
+			bulletColor,
+			component.Bullet{},
+			effects.Layer{Depth: 0},
+		)
+	}
+}
+
+func (gms *gameMapSystem) bulletSystem(world *goecs.World, _ float32) error {
+	for it := world.Iterator(component.TYPE.Bullet, geometry.TYPE.Point); it != nil; it = it.Next() {
+		bullet := it.Value()
+		pos := geometry.Get.Point(bullet)
+		if pos.X >= gms.dr.Width*gms.gs.Point.X {
+			_ = world.Remove(bullet)
 		}
 	}
 	return nil
