@@ -301,10 +301,35 @@
       }
     },
     {
-      "filename": "container.png",
+      "filename": "blockchain.png",
       "frame": {
         "x": 807,
         "y": 603,
+        "w": 80,
+        "h": 80
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 80,
+        "h": 80
+      },
+      "sourceSize": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "container.png",
+      "frame": {
+        "x": 807,
+        "y": 693,
         "w": 64,
         "h": 64
       },
@@ -328,8 +353,8 @@
     {
       "filename": "mark.png",
       "frame": {
-        "x": 807,
-        "y": 677,
+        "x": 605,
+        "y": 767,
         "w": 64,
         "h": 64
       },
@@ -353,8 +378,8 @@
     {
       "filename": "sidecar.png",
       "frame": {
-        "x": 605,
-        "y": 751,
+        "x": 679,
+        "y": 767,
         "w": 64,
         "h": 64
       },

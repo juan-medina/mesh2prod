@@ -36,6 +36,7 @@ import (
 	"github.com/juan-medina/mesh2prod/game/component"
 	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
+	"github.com/juan-medina/mesh2prod/game/score"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -526,23 +527,55 @@ func (gms *gameMapSystem) collisionListener(world *goecs.World, signal interface
 }
 
 func (gms *gameMapSystem) clearSystem(world *goecs.World, delta float32) error {
-	any := false
+	// total block we clear
+	total := 0
+
+	// total x and y for the block that we clear
+	totalX := float32(0)
+	totalY := float32(0)
+
+	// iterate the blocks
 	for it := world.Iterator(component.TYPE.Block); it != nil; it = it.Next() {
 		ent := it.Value()
 		block := component.Get.Block(ent)
+		// if is a block that need clear
 		if gms.data[block.C][block.R] == clear {
+			// decrease time
 			block.ClearOn -= delta
+			// update block
 			ent.Set(block)
+			// if we are on time to clear
 			if block.ClearOn <= 0 {
-				any = true
+				// get the position and add to the totals
+				pos := geometry.Get.Point(ent)
+				totalX += pos.X
+				totalY += pos.Y
+				// remove entity
 				_ = world.Remove(ent)
+				// remove from our slices
 				gms.data[block.C][block.R] = empty
 				gms.sprs[block.C][block.R] = nil
+				total++
 			}
 		}
 	}
-	if any {
-		_ = world.Signal(events.PlaySoundEvent{Name: popSound})
+	// if we have clear any block
+	if total > 0 {
+		var err error
+		// the points are generate at the average of all blocks position
+		at := geometry.Point{
+			X: totalX / float32(total),
+			Y: totalY / float32(total),
+		}
+		// signal that we got points at a position
+		if err = world.Signal(score.PointsEvent{Total: total, At: at}); err != nil {
+			return err
+		}
+
+		// play pop sound
+		if err = world.Signal(events.PlaySoundEvent{Name: popSound}); err != nil {
+			return err
+		}
 	}
 
 	return nil
