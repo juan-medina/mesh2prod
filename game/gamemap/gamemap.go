@@ -215,6 +215,7 @@ func (gms *gameMapSystem) clearArea(fromC, fromR, toC, toR int) {
 			gms.data[c][r] = clear
 			if gms.sprs[c][r] != nil {
 				block := component.Get.Block(gms.sprs[c][r])
+				block.ClearOn = 5
 				gms.sprs[c][r].Set(block)
 				gms.sprs[c][r].Remove(color.TYPE.Solid)
 				gms.sprs[c][r].Remove(effects.TYPE.AlternateColor)
@@ -709,11 +710,14 @@ func (gms *gameMapSystem) collisionListener(world *goecs.World, signal interface
 
 func (gms *gameMapSystem) clearSystem(world *goecs.World, delta float32) error {
 	gms.lastShoot += delta
-	if gms.lastShoot > 2 {
-		for it := world.Iterator(component.TYPE.Block); it != nil; it = it.Next() {
-			ent := it.Value()
-			block := component.Get.Block(ent)
-			if gms.data[block.C][block.R] == clear {
+
+	for it := world.Iterator(component.TYPE.Block); it != nil; it = it.Next() {
+		ent := it.Value()
+		block := component.Get.Block(ent)
+		if gms.data[block.C][block.R] == clear {
+			block.ClearOn -= delta
+			ent.Set(block)
+			if gms.lastShoot > 2 || block.ClearOn <= 0 {
 				_ = world.Remove(ent)
 				gms.data[block.C][block.R] = empty
 				gms.sprs[block.C][block.R] = nil
