@@ -28,11 +28,9 @@ import (
 	"github.com/juan-medina/goecs"
 	"github.com/juan-medina/gosge"
 	"github.com/juan-medina/gosge/components/color"
-	"github.com/juan-medina/gosge/components/device"
 	"github.com/juan-medina/gosge/components/effects"
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/components/sprite"
-	"github.com/juan-medina/gosge/events"
 	"github.com/juan-medina/mesh2prod/game/collision"
 	"github.com/juan-medina/mesh2prod/game/component"
 	"github.com/juan-medina/mesh2prod/game/constants"
@@ -70,7 +68,6 @@ type gameMapSystem struct {
 	dr           geometry.Size     // design resolution
 	blockSize    geometry.Size     // block size
 	scrollMarker *goecs.Entity     // track the scroll position
-	lastShoot    float32
 }
 
 var (
@@ -299,9 +296,6 @@ func (gms *gameMapSystem) load(eng *gosge.Engine) error {
 	// clear block systems
 	world.AddSystem(gms.clearSystem)
 
-	// listen to keys
-	world.AddListener(gms.keyListener)
-
 	// listen to collisions
 	world.AddListener(gms.collisionListener)
 
@@ -471,19 +465,6 @@ func (gms *gameMapSystem) addEntity(world *goecs.World, col, row int, offset flo
 	)
 }
 
-// listen to keys
-func (gms *gameMapSystem) keyListener(_ *goecs.World, signal interface{}, _ float32) error {
-	switch e := signal.(type) {
-	// if we got a key up
-	case events.KeyUpEvent:
-		// if it space
-		if e.Key == device.KeySpace {
-			gms.lastShoot = 0
-		}
-	}
-	return nil
-}
-
 func (gms *gameMapSystem) bulletSystem(world *goecs.World, _ float32) error {
 	for it := world.Iterator(component.TYPE.Bullet, geometry.TYPE.Point); it != nil; it = it.Next() {
 		bullet := it.Value()
@@ -531,15 +512,13 @@ func (gms *gameMapSystem) collisionListener(world *goecs.World, signal interface
 }
 
 func (gms *gameMapSystem) clearSystem(world *goecs.World, delta float32) error {
-	gms.lastShoot += delta
-
 	for it := world.Iterator(component.TYPE.Block); it != nil; it = it.Next() {
 		ent := it.Value()
 		block := component.Get.Block(ent)
 		if gms.data[block.C][block.R] == clear {
 			block.ClearOn -= delta
 			ent.Set(block)
-			if gms.lastShoot > 2 || block.ClearOn <= 0 {
+			if block.ClearOn <= 0 {
 				_ = world.Remove(ent)
 				gms.data[block.C][block.R] = empty
 				gms.sprs[block.C][block.R] = nil
