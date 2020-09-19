@@ -143,11 +143,7 @@ func (ms *meshSystem) followSystem(_ *goecs.World, delta float32) error {
 	diffY := ms.planePos.Y - meshPos.Y
 
 	// increase Movement up or down
-	if diffY > 0 {
-		mov.Amount.Y += meshSpeed * delta
-	} else {
-		mov.Amount.Y += -meshSpeed * delta
-	}
+	mov.Amount.Y = diffY * meshSpeed * ms.gs.Point.Y * delta
 
 	// clamp speed
 	if mov.Amount.Y > topMeshSpeed {
