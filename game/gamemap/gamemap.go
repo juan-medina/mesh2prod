@@ -397,7 +397,7 @@ func (gms *gameMapSystem) generate() {
 		}
 
 		// advance column random
-		cc += 15 + rand.Intn(5)
+		cc += 20 + rand.Intn(2)
 	}
 }
 
