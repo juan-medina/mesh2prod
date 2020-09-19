@@ -38,8 +38,6 @@ import (
 	"github.com/juan-medina/mesh2prod/game/movement"
 	"github.com/juan-medina/mesh2prod/game/plane"
 	"math"
-	"math/rand"
-	"time"
 )
 
 // logic constants
@@ -70,7 +68,6 @@ type targetSystem struct {
 
 // load the system
 func (gms *targetSystem) load(eng *gosge.Engine) error {
-	rand.Seed(time.Now().UnixNano())
 	var err error
 
 	// get the block size
@@ -311,7 +308,7 @@ func (gms *targetSystem) bulletSystem(world *goecs.World, _ float32) error {
 	return nil
 }
 
-// System create the map system
+// System create the target system
 func System(engine *gosge.Engine, gs geometry.Scale, dr geometry.Size) error {
 	gms := targetSystem{
 		gs: gs,
