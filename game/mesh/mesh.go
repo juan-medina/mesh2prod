@@ -37,16 +37,16 @@ import (
 )
 
 const (
-	animSpeedSlow    = 0.65          // animation slow speed
-	meshSpriteAnim   = "box%d.png"   // the mesh sprite
-	meshScale        = 1             // mesh scale
-	meshX            = 310           // mesh scale
-	meshSpeed        = float32(40)   // mesh speed
-	topMeshSpeed     = meshSpeed * 2 // top mesh speed
-	joinShiftX       = 5             // shift X for the joint
-	joinShiftYTop    = 130           // shift Y for the top joint
-	joinShiftYBottom = 170           // shift Y for the bottom joint
-	lineThickness    = 5             // the line thickness
+	animSpeedSlow    = 0.65         // animation slow speed
+	meshSpriteAnim   = "box%d.png"  // the mesh sprite
+	meshScale        = 1            // mesh scale
+	meshX            = 310          // mesh scale
+	meshSpeed        = float32(200) // mesh speed
+	topMeshSpeed     = float32(250) // top mesh speed
+	joinShiftX       = 5            // shift X for the joint
+	joinShiftYTop    = 130          // shift Y for the top joint
+	joinShiftYBottom = 170          // shift Y for the bottom joint
+	lineThickness    = 5            // the line thickness
 )
 
 type meshSystem struct {
