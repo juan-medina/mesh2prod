@@ -145,19 +145,20 @@ func (gms *gameMapSystem) place(c, r int) {
 		}
 	}
 
-	// calculate from and to
-	var fromC, fromR, toC, toR int
-	fromC = c
-	fromR = tr
-	toC = sc
-	toR = br
-
-	// check for the whole area each subarea
-	for cc := fromC + 1; cc <= toC; cc++ {
-		for cr := fromR + 1; cr <= toR; cr++ {
-			// if we could clear this sub area clear it
-			if gms.canClearArea(fromC, fromR, cc, cr) {
-				gms.clearArea(fromC, fromR, cc, cr)
+	// check for areas
+	for cc := c + 1; cc <= sc; cc++ {
+		// areas on top of the place block
+		for cr := r - 1; cr >= tr; cr-- {
+			can := gms.canClearArea(c, cr, cc, r)
+			if can {
+				gms.clearArea(c, cr, cc, r)
+			}
+		}
+		// areas under the place block
+		for cr := br; cr > r; cr-- {
+			can := gms.canClearArea(c, r, cc, cr)
+			if can {
+				gms.clearArea(c, r, cc, cr)
 			}
 		}
 	}
@@ -535,7 +536,7 @@ func (gms *gameMapSystem) targetSystem(_ *goecs.World, _ float32) error {
 	for sc = c; sc < gms.cols; sc++ {
 		if sc >= 0 {
 			// if the block is no empty
-			if gms.data[sc][r] != empty {
+			if gms.data[sc][r] != empty && gms.sprs[sc][r] != nil {
 				pos := geometry.Get.Point(gms.sprs[sc][r])
 				// if we are withing the gap and the screen size
 				if pos.X > (gms.gunPos.X+(targetGapX*gms.gs.Point.X)) &&
