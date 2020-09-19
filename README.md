@@ -58,7 +58,7 @@ You can also build binary in [MSYS2](https://msys2.github.io/) shell.
 - `opengl21` : uses OpenGL 2.1 backend (default is 3.3)
 - `wayland` : builds against Wayland libraries
 
-## Examples Resources
+## Resources
 - Gopher Graphics
     - https://awesomeopensource.com/project/egonelbre/gophers
 - Game art 2D:
