@@ -69,6 +69,10 @@ You can also build binary in [MSYS2](https://msys2.github.io/) shell.
     - https://fardifferent.itch.io/loops
 - freesound.org
     - https://freesound.org/people/SKKreativ/sounds/456255/
+    - https://freesound.org/people/Mozfoo/sounds/440163/
+    - https://freesound.org/people/djfroyd/sounds/348163/
+    - https://freesound.org/people/ConarB13/sounds/401542/
+    - https://freesound.org/people/BenjaminNelan/sounds/410364/
 - opengameart.org
     - https://opengameart.org/content/scratched-metal-crate
     - https://opengameart.org/content/2d-clouds-pack

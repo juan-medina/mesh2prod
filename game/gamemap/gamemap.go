@@ -31,6 +31,7 @@ import (
 	"github.com/juan-medina/gosge/components/effects"
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/components/sprite"
+	"github.com/juan-medina/gosge/events"
 	"github.com/juan-medina/mesh2prod/game/collision"
 	"github.com/juan-medina/mesh2prod/game/component"
 	"github.com/juan-medina/mesh2prod/game/constants"
@@ -53,10 +54,12 @@ const (
 
 // logic constants
 const (
-	blockSpeed      = 25              // our block speed
-	containerSprite = "container.png" // block sprite
-	sidecarSprite   = "sidecar.png"   // block sprite
-	blockScale      = 0.5             // block scale
+	blockSpeed      = 25                        // our block speed
+	containerSprite = "container.png"           // block sprite
+	sidecarSprite   = "sidecar.png"             // block sprite
+	blockScale      = 0.5                       // block scale
+	popSound        = "resources/audio/pop.wav" // block pop
+	hitSound        = "resources/audio/hit.wav" // block hit
 )
 
 type gameMapSystem struct {
@@ -275,6 +278,16 @@ func fromString(str string) *gameMapSystem {
 func (gms *gameMapSystem) load(eng *gosge.Engine) error {
 	rand.Seed(time.Now().UnixNano())
 	var err error
+
+	// pop sound
+	if err = eng.LoadSound(popSound); err != nil {
+		return err
+	}
+
+	// hit sound
+	if err = eng.LoadSound(hitSound); err != nil {
+		return err
+	}
 
 	// get the block size
 	if gms.blockSize, err = eng.GetSpriteSize(constants.SpriteSheet, containerSprite); err != nil {
@@ -504,6 +517,7 @@ func (gms *gameMapSystem) collisionListener(world *goecs.World, signal interface
 			})
 			gms.sprs[c][r] = nb
 			gms.place(c, r)
+			return world.Signal(events.PlaySoundEvent{Name: hitSound})
 		}
 
 	}
@@ -512,6 +526,7 @@ func (gms *gameMapSystem) collisionListener(world *goecs.World, signal interface
 }
 
 func (gms *gameMapSystem) clearSystem(world *goecs.World, delta float32) error {
+	any := false
 	for it := world.Iterator(component.TYPE.Block); it != nil; it = it.Next() {
 		ent := it.Value()
 		block := component.Get.Block(ent)
@@ -519,11 +534,15 @@ func (gms *gameMapSystem) clearSystem(world *goecs.World, delta float32) error {
 			block.ClearOn -= delta
 			ent.Set(block)
 			if block.ClearOn <= 0 {
+				any = true
 				_ = world.Remove(ent)
 				gms.data[block.C][block.R] = empty
 				gms.sprs[block.C][block.R] = nil
 			}
 		}
+	}
+	if any {
+		_ = world.Signal(events.PlaySoundEvent{Name: popSound})
 	}
 
 	return nil

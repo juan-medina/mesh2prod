@@ -44,14 +44,15 @@ import (
 
 // logic constants
 const (
-	markSprite        = "mark.png"      // mark sprite
-	bulletSprite      = "bullet_%d.png" // bullet sprite base
-	bulletScale       = 0.25            // scale for the bullet sprite
-	bulletFrames      = 5               // bullet frames
-	bulletFramesDelay = 0.065           // bullet frame delay
-	bulletSpeed       = 600             // bullet speed
-	targetScale       = 0.5             // block scale
-	targetGapX        = 100             // target gap from gun pos
+	markSprite        = "mark.png"                 // mark sprite
+	bulletSprite      = "bullet_%d.png"            // bullet sprite base
+	bulletScale       = 0.25                       // scale for the bullet sprite
+	bulletFrames      = 5                          // bullet frames
+	bulletFramesDelay = 0.065                      // bullet frame delay
+	bulletSpeed       = 600                        // bullet speed
+	targetScale       = 0.5                        // block scale
+	targetGapX        = 100                        // target gap from gun pos
+	shotSound         = "resources/audio/shot.wav" // plane shot sound
 )
 
 var (
@@ -74,6 +75,11 @@ func (gms *targetSystem) load(eng *gosge.Engine) error {
 
 	// get the block size
 	if gms.targetSize, err = eng.GetSpriteSize(constants.SpriteSheet, markSprite); err != nil {
+		return err
+	}
+
+	// laser sound
+	if err = eng.LoadSound(shotSound); err != nil {
 		return err
 	}
 
@@ -290,6 +296,7 @@ func (gms targetSystem) createBullet(world *goecs.World) {
 			component.Bullet{},
 			effects.Layer{Depth: 0},
 		)
+		_ = world.Signal(events.PlaySoundEvent{Name: shotSound})
 	}
 }
 

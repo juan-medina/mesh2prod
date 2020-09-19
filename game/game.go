@@ -37,7 +37,8 @@ import (
 )
 
 const (
-	music = "resources/music/loop.ogg" // our game music
+	music     = "resources/music/loop.ogg"  // our game music
+	planeLoop = "resources/audio/plane.ogg" // our plane loop
 )
 
 var (
@@ -56,6 +57,11 @@ func Load(eng *gosge.Engine) error {
 
 	// load the music
 	if err = eng.LoadMusic(music); err != nil {
+		return err
+	}
+
+	// load the plane loop
+	if err = eng.LoadMusic(planeLoop); err != nil {
 		return err
 	}
 
@@ -100,5 +106,10 @@ func Load(eng *gosge.Engine) error {
 	}
 
 	// play the music
-	return world.Signal(events.PlayMusicEvent{Name: music})
+	if err = world.Signal(events.PlayMusicEvent{Name: music}); err != nil {
+		return err
+	}
+
+	// play the plane loop
+	return world.Signal(events.PlayMusicEvent{Name: planeLoop})
 }
