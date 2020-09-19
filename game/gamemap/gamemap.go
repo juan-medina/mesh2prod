@@ -48,16 +48,17 @@ type blocState int
 //goland:noinspection GoUnusedConst
 const (
 	empty = blocState(iota)
-	fill
 	placed
 	clear
+	fill
 )
 
 // logic constants
 const (
-	blockSpeed  = 25          // our block speed
-	blockSprite = "block.png" // block sprite
-	blockScale  = 0.5         // block scale
+	blockSpeed      = 25              // our block speed
+	containerSprite = "container.png" // block sprite
+	sidecarSprite   = "sidecar.png"   // block sprite
+	blockScale      = 0.5             // block scale
 )
 
 type gameMapSystem struct {
@@ -71,6 +72,19 @@ type gameMapSystem struct {
 	scrollMarker *goecs.Entity     // track the scroll position
 	lastShoot    float32
 }
+
+var (
+	colors = []color.Solid{
+		color.Yellow,
+		color.Gold,
+		color.Orange,
+		color.Pink,
+		color.Green,
+		color.Purple,
+		color.Beige,
+		color.Gopher,
+	}
+)
 
 // generate a string for current map status
 func (gms gameMapSystem) String() string {
@@ -147,11 +161,11 @@ func (gms *gameMapSystem) place(c, r int) {
 }
 
 // add a block in a position
-func (gms *gameMapSystem) add(col, row int, piece [][]blocState) {
+func (gms *gameMapSystem) add(col, row int, piece [][]blocState, color int) {
 	for r := 0; r < len(piece); r++ {
 		for c := 0; c < len(piece[r]); c++ {
 			if piece[r][c] != empty {
-				gms.data[col+c][row+r] = piece[r][c]
+				gms.data[col+c][row+r] = blocState(int(piece[r][c]) + color)
 			}
 		}
 	}
@@ -204,7 +218,7 @@ func (gms *gameMapSystem) clearArea(fromC, fromR, toC, toR int) {
 				gms.sprs[c][r].Remove(effects.TYPE.AlternateColorState)
 				gms.sprs[c][r].Set(effects.AlternateColor{
 					From:  color.Red,
-					To:    color.SkyBlue,
+					To:    color.Red.Blend(color.Black, 0.50).Alpha(127),
 					Time:  0.25,
 					Delay: 0,
 				})
@@ -266,7 +280,7 @@ func (gms *gameMapSystem) load(eng *gosge.Engine) error {
 	var err error
 
 	// get the block size
-	if gms.blockSize, err = eng.GetSpriteSize(constants.SpriteSheet, blockSprite); err != nil {
+	if gms.blockSize, err = eng.GetSpriteSize(constants.SpriteSheet, containerSprite); err != nil {
 		return err
 	}
 
@@ -298,59 +312,59 @@ func (gms *gameMapSystem) load(eng *gosge.Engine) error {
 func (gms *gameMapSystem) generate() {
 	// pieces
 	piece1 := [][]blocState{
-		{0, 1},
-		{1, 1},
-		{1, 1},
-		{0, 1},
+		{0, 3},
+		{3, 3},
+		{3, 3},
+		{0, 3},
 	}
 
 	piece2 := [][]blocState{
-		{1, 1, 1},
-		{0, 1, 1},
-		{1, 1, 1},
+		{3, 3, 3},
+		{0, 3, 3},
+		{3, 3, 3},
 	}
 
 	piece3 := [][]blocState{
-		{1, 1, 1},
-		{0, 1, 1},
-		{0, 1, 1},
+		{3, 3, 3},
+		{0, 3, 3},
+		{0, 3, 3},
 	}
 
 	piece4 := [][]blocState{
-		{0, 1, 1},
-		{0, 1, 1},
-		{1, 1, 1},
+		{0, 3, 3},
+		{0, 3, 3},
+		{3, 3, 3},
 	}
 
 	piece5 := [][]blocState{
-		{0, 1},
-		{1, 1},
+		{0, 3},
+		{3, 3},
 	}
 
 	piece6 := [][]blocState{
-		{1, 1},
-		{0, 1},
+		{3, 3},
+		{0, 3},
 	}
 
 	piece7 := [][]blocState{
-		{1, 1},
-		{0, 1},
-		{0, 1},
-		{1, 1},
+		{3, 3},
+		{0, 3},
+		{0, 3},
+		{3, 3},
 	}
 
 	piece8 := [][]blocState{
-		{1, 1, 1, 1},
-		{0, 1, 1, 1},
-		{0, 0, 1, 1},
-		{0, 0, 0, 1},
+		{3, 3, 3, 3},
+		{0, 3, 3, 3},
+		{0, 0, 3, 3},
+		{0, 0, 0, 3},
 	}
 
 	piece9 := [][]blocState{
-		{0, 0, 0, 1},
-		{0, 0, 1, 1},
-		{0, 1, 1, 1},
-		{1, 1, 1, 1},
+		{0, 0, 0, 3},
+		{0, 0, 3, 3},
+		{0, 3, 3, 3},
+		{3, 3, 3, 3},
 	}
 
 	// set o pieces
@@ -383,8 +397,9 @@ func (gms *gameMapSystem) generate() {
 			p := rand.Intn(len(pieces))
 			// random shift of row
 			r := 4 + rand.Intn(limitR)
+			clr := rand.Intn(len(colors))
 			// add piece
-			gms.add(c, r, pieces[p])
+			gms.add(c, r, pieces[p], clr)
 		}
 
 		// advance column random
@@ -412,13 +427,15 @@ func (gms *gameMapSystem) addSprites(world *goecs.World) {
 
 			ent.Add(sprite.Sprite{
 				Sheet: constants.SpriteSheet,
-				Name:  blockSprite,
+				Name:  containerSprite,
 				Scale: gms.gs.Min * blockScale,
 			})
 
+			clr := colors[(gms.data[c][r] - fill)]
+
 			ent.Add(effects.AlternateColor{
-				From:  color.Gopher,
-				To:    color.SkyBlue,
+				From:  clr,
+				To:    clr.Blend(color.Black, 0.15),
 				Time:  0.25,
 				Delay: 0,
 			})
@@ -493,7 +510,7 @@ func (gms *gameMapSystem) collisionListener(world *goecs.World, signal interface
 
 			nb.Add(sprite.Sprite{
 				Sheet: constants.SpriteSheet,
-				Name:  blockSprite,
+				Name:  sidecarSprite,
 				Scale: gms.gs.Min * blockScale,
 			})
 

@@ -301,7 +301,7 @@
       }
     },
     {
-      "filename": "block.png",
+      "filename": "container.png",
       "frame": {
         "x": 807,
         "y": 603,
@@ -330,6 +330,31 @@
       "frame": {
         "x": 807,
         "y": 677,
+        "w": 64,
+        "h": 64
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 64
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 64
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "sidecar.png",
+      "frame": {
+        "x": 605,
+        "y": 751,
         "w": 64,
         "h": 64
       },
