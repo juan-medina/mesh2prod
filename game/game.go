@@ -33,6 +33,7 @@ import (
 	"github.com/juan-medina/mesh2prod/game/mesh"
 	"github.com/juan-medina/mesh2prod/game/movement"
 	"github.com/juan-medina/mesh2prod/game/plane"
+	"github.com/juan-medina/mesh2prod/game/target"
 )
 
 const (
@@ -85,6 +86,11 @@ func Load(eng *gosge.Engine) error {
 
 	// add the map
 	if err = gamemap.System(eng, gameScale, designResolution); err != nil {
+		return err
+	}
+
+	// add the target
+	if err = target.System(eng, gameScale, designResolution); err != nil {
 		return err
 	}
 

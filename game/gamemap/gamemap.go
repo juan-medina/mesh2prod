@@ -27,20 +27,16 @@ import (
 	"fmt"
 	"github.com/juan-medina/goecs"
 	"github.com/juan-medina/gosge"
-	"github.com/juan-medina/gosge/components/animation"
 	"github.com/juan-medina/gosge/components/color"
 	"github.com/juan-medina/gosge/components/device"
 	"github.com/juan-medina/gosge/components/effects"
 	"github.com/juan-medina/gosge/components/geometry"
-	"github.com/juan-medina/gosge/components/shapes"
 	"github.com/juan-medina/gosge/components/sprite"
 	"github.com/juan-medina/gosge/events"
 	"github.com/juan-medina/mesh2prod/game/collision"
 	"github.com/juan-medina/mesh2prod/game/component"
 	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
-	"github.com/juan-medina/mesh2prod/game/plane"
-	"math"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -59,20 +55,9 @@ const (
 
 // logic constants
 const (
-	blockSpeed        = 25              // our block speed
-	blockSprite       = "block.png"     // block sprite
-	markSprite        = "mark.png"      // mark sprite
-	blockScale        = 0.5             // block scale
-	targetGapX        = 100             // target gap from gun pos
-	bulletSprite      = "bullet_%d.png" // bullet sprite base
-	bulletScale       = 0.25            // scale for the bullet sprite
-	bulletFrames      = 5               // bullet frames
-	bulletFramesDelay = 0.065           // bullet frame delay
-	bulletSpeed       = 600             // bullet speed
-)
-
-var (
-	bulletColor = color.Red.Alpha(180) // bullet color
+	blockSpeed  = 25          // our block speed
+	blockSprite = "block.png" // block sprite
+	blockScale  = 0.5         // block scale
 )
 
 type gameMapSystem struct {
@@ -84,9 +69,6 @@ type gameMapSystem struct {
 	dr           geometry.Size     // design resolution
 	blockSize    geometry.Size     // block size
 	scrollMarker *goecs.Entity     // track the scroll position
-	gunPos       geometry.Point    // plane gun position
-	target       *goecs.Entity     // current target position
-	line         *goecs.Entity     // target line
 	lastShoot    float32
 }
 
@@ -297,17 +279,11 @@ func (gms *gameMapSystem) load(eng *gosge.Engine) error {
 	// add the sprites from the current state
 	gms.addSprites(world)
 
-	// add the target system that target blocks
-	world.AddSystem(gms.targetSystem)
-
 	// add the bullet system
 	world.AddSystem(gms.bulletSystem)
 
 	// clear block systems
 	world.AddSystem(gms.clearSystem)
-
-	// listen to plane changes
-	world.AddListener(gms.planeChanges)
 
 	// listen to keys
 	world.AddListener(gms.keyListener)
@@ -423,32 +399,6 @@ func (gms *gameMapSystem) addSprites(world *goecs.World) {
 	// add a scroll marker
 	gms.scrollMarker = gms.addEntity(world, 0, 0, offset)
 
-	// add our target
-	gms.target = gms.addEntity(world, 0, 0, offset)
-
-	gms.target.Add(sprite.Sprite{
-		Sheet: constants.SpriteSheet,
-		Name:  markSprite,
-		Scale: gms.gs.Min * blockScale,
-	})
-	gms.target.Add(effects.Layer{Depth: 0})
-	gms.target.Add(color.Red)
-	gms.target.Add(effects.AlternateColor{
-		From:  color.Red,
-		To:    color.Red.Alpha(180),
-		Time:  0.25,
-		Delay: 0,
-	})
-
-	// add the target line
-	gms.line = gms.addEntity(world, 0, 0, offset)
-	gms.line.Add(color.Red.Alpha(127))
-	gms.line.Add(shapes.Line{
-		To:        geometry.Point{},
-		Thickness: 2,
-	})
-	gms.line.Add(effects.Layer{Depth: 0})
-
 	// for each column row
 	for c := 0; c < gms.cols; c++ {
 		for r := 0; r < gms.rows; r++ {
@@ -504,162 +454,17 @@ func (gms *gameMapSystem) addEntity(world *goecs.World, col, row int, offset flo
 	)
 }
 
-// a system that target a block
-func (gms *gameMapSystem) targetSystem(_ *goecs.World, _ float32) error {
-	// get the current scroll
-	pos := geometry.Get.Point(gms.scrollMarker)
-	// get displacement for our gun
-	x := gms.gunPos.X - (pos.X - (gms.blockSize.Width / 2))
-	y := gms.gunPos.Y - (pos.Y - (gms.blockSize.Height / 2))
-	// calculate row and column
-	c := int(x / (gms.blockSize.Width * blockScale * gms.gs.Point.X))
-	r := int(y / (gms.blockSize.Height * blockScale * gms.gs.Point.Y))
-
-	if c < 0 {
-		c = 0
-	}
-
-	if r < 0 {
-		r = 0
-	}
-
-	// get the line from
-	linePosFrom := geometry.Get.Point(gms.line)
-	linePosFrom.X = gms.gunPos.X
-	linePosFrom.Y = gms.gunPos.Y
-	// get the line component
-	line := shapes.Get.Line(gms.line)
-
-	// try to find a target
-	found := false
-	var sc = c
-	// goes trough the rows
-	for sc = c; sc < gms.cols; sc++ {
-		if sc >= 0 {
-			// if the block is no empty
-			if gms.data[sc][r] != empty && gms.sprs[sc][r] != nil {
-				pos := geometry.Get.Point(gms.sprs[sc][r])
-				// if we are withing the gap and the screen size
-				if pos.X > (gms.gunPos.X+(targetGapX*gms.gs.Point.X)) &&
-					(pos.X < (gms.dr.Width * gms.gs.Point.X)) {
-					// found it
-					found = true
-					// calculate target pos
-					targetPos := geometry.Point{
-						X: pos.X - (gms.blockSize.Width * gms.gs.Point.X * blockScale),
-						Y: pos.Y,
-					}
-					gms.target.Set(targetPos)
-					// calculate line pos
-					line.To = geometry.Point{
-						X: targetPos.X - (gms.blockSize.Width/2)*blockScale*gms.gs.Point.X,
-						Y: targetPos.Y,
-					}
-				}
-				// it was a block no empty, skip
-				break
-			}
-		}
-	}
-
-	// if we have no a target
-	if !found {
-		// move target ouf ot screen
-		gms.target.Set(geometry.Point{
-			X: -1000,
-			Y: -1000,
-		})
-
-		// move line straight from gun
-		line.To = geometry.Point{
-			X: gms.dr.Width * gms.gs.Point.X,
-			Y: gms.gunPos.Y,
-		}
-	}
-
-	// update line
-	gms.line.Set(linePosFrom)
-	gms.line.Set(line)
-
-	return nil
-}
-
-// if the plane change position
-func (gms *gameMapSystem) planeChanges(_ *goecs.World, signal interface{}, _ float32) error {
-	switch e := signal.(type) {
-	case plane.PositionChangeEvent:
-		// store gun position
-		gms.gunPos = e.Gun
-	}
-	return nil
-}
-
 // listen to keys
-func (gms *gameMapSystem) keyListener(world *goecs.World, signal interface{}, _ float32) error {
+func (gms *gameMapSystem) keyListener(_ *goecs.World, signal interface{}, _ float32) error {
 	switch e := signal.(type) {
 	// if we got a key up
 	case events.KeyUpEvent:
 		// if it space
 		if e.Key == device.KeySpace {
-			gms.createBullet(world)
 			gms.lastShoot = 0
 		}
 	}
 	return nil
-}
-
-func (gms gameMapSystem) createBullet(world *goecs.World) {
-	// get target
-	targetPos := geometry.Get.Point(gms.target)
-	// if we have a target on the screen
-	if targetPos.X > 0 && targetPos.Y > 0 {
-		// calculate min / max y and velocity
-		minY := gms.gunPos.Y
-		maxY := targetPos.Y
-		velY := maxY - minY
-		velY = float32(float64(velY)/math.Abs(float64(velY))) * bulletSpeed * 10
-		if minY > maxY {
-			aux := minY
-			minY = maxY
-			maxY = aux
-		}
-		// add a bullet
-		world.AddEntity(
-			animation.Animation{
-				Sequences: map[string]animation.Sequence{
-					"moving": {
-						Sheet:  constants.SpriteSheet,
-						Base:   bulletSprite,
-						Scale:  gms.gs.Min * bulletScale,
-						Frames: bulletFrames,
-						Delay:  bulletFramesDelay,
-					},
-				},
-				Current: "moving",
-				Speed:   1,
-			},
-			gms.gunPos,
-			movement.Movement{
-				Amount: geometry.Point{
-					Y: velY * gms.gs.Point.Y,
-					X: bulletSpeed * gms.gs.Point.X,
-				},
-			},
-			movement.Constrain{
-				Min: geometry.Point{
-					X: 0,
-					Y: minY,
-				},
-				Max: geometry.Point{
-					X: gms.dr.Width * gms.gs.Point.X,
-					Y: maxY,
-				},
-			},
-			bulletColor,
-			component.Bullet{},
-			effects.Layer{Depth: 0},
-		)
-	}
 }
 
 func (gms *gameMapSystem) bulletSystem(world *goecs.World, _ float32) error {
