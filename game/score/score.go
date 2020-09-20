@@ -68,7 +68,8 @@ type scoreSystem struct {
 }
 
 var (
-	bcColor = color.Solid{R: 227, G: 140, B: 41, A: 255} // our text color
+	bcColor       = color.Solid{R: 227, G: 140, B: 41, A: 255} // our bc text color
+	positiveColor = color.Green                                // positive numbers color
 )
 
 // load the system
@@ -157,34 +158,7 @@ func (ss *scoreSystem) pointsListener(world *goecs.World, signal interface{}, _ 
 			ss.toAdd += base
 		}
 
-		var text string
-		// format text for our floating text
-		if extra > 1 {
-			text = fmt.Sprintf("+%dx%d", base, extra)
-		} else {
-			text = fmt.Sprintf("+%d", base)
-		}
-		// add the floating text
-		world.AddEntity(
-			ui.Text{
-				String:     text,
-				Size:       floatPointSize * ss.gs.Min,
-				Font:       font,
-				VAlignment: ui.MiddleVAlignment,
-				HAlignment: ui.CenterHAlignment,
-			},
-			e.At,
-			bcColor,
-			effects.Layer{Depth: -10},
-			movement.Movement{
-				Amount: geometry.Point{
-					X: -textScrollSpeedX * ss.gs.Point.X,
-					Y: -textScrollSpeedY * ss.gs.Point.Y,
-				},
-			},
-			component.FloatText{},
-		)
-
+		ss.addFloatPoints(world, base, extra, e.At)
 	}
 	return nil
 }
@@ -234,6 +208,36 @@ func (ss *scoreSystem) textFadeSystem(world *goecs.World, delta float32) error {
 	}
 
 	return nil
+}
+
+func (ss *scoreSystem) addFloatPoints(world *goecs.World, base, extra int, at geometry.Point) {
+	var text string
+	// format text for our floating text
+	if extra > 1 {
+		text = fmt.Sprintf("+ %dx%d", base, extra)
+	} else {
+		text = fmt.Sprintf("+ %d", base)
+	}
+	// add the floating text
+	world.AddEntity(
+		ui.Text{
+			String:     text,
+			Size:       floatPointSize * ss.gs.Min,
+			Font:       font,
+			VAlignment: ui.MiddleVAlignment,
+			HAlignment: ui.CenterHAlignment,
+		},
+		at,
+		positiveColor,
+		effects.Layer{Depth: -10},
+		movement.Movement{
+			Amount: geometry.Point{
+				X: -textScrollSpeedX * ss.gs.Point.X,
+				Y: -textScrollSpeedY * ss.gs.Point.Y,
+			},
+		},
+		component.FloatText{},
+	)
 }
 
 // System create the score system
