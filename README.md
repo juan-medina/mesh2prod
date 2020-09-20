@@ -76,5 +76,4 @@ You can also build binary in [MSYS2](https://msys2.github.io/) shell.
 - opengameart.org
     - https://opengameart.org/content/scratched-metal-crate
     - https://opengameart.org/content/2d-clouds-pack
-- GameSupplyGuy
-    - https://gamesupply.itch.io/fruits-and-vegetables
+    - https://opengameart.org/content/rpg-gui-block-element

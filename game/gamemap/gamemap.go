@@ -55,12 +55,11 @@ const (
 
 // logic constants
 const (
-	blockSpeed      = 25                        // our block speed
-	containerSprite = "container.png"           // block sprite
-	sidecarSprite   = "sidecar.png"             // block sprite
-	blockScale      = 0.5                       // block scale
-	popSound        = "resources/audio/pop.wav" // block pop
-	hitSound        = "resources/audio/hit.wav" // block hit
+	blockSpeed = 25                        // our block speed
+	boxSprite  = "box.png"                 // block sprite
+	blockScale = 0.5                       // block scale
+	popSound   = "resources/audio/pop.wav" // block pop
+	hitSound   = "resources/audio/hit.wav" // block hit
 )
 
 type gameMapSystem struct {
@@ -219,7 +218,7 @@ func (gms *gameMapSystem) clearArea(fromC, fromR, toC, toR int) {
 				gms.sprs[c][r].Remove(effects.TYPE.AlternateColorState)
 				gms.sprs[c][r].Set(effects.AlternateColor{
 					From:  color.Red,
-					To:    color.Red.Blend(color.Black, 0.50).Alpha(127),
+					To:    color.Red.Alpha(127),
 					Time:  0.25,
 					Delay: 0,
 				})
@@ -291,7 +290,7 @@ func (gms *gameMapSystem) load(eng *gosge.Engine) error {
 	}
 
 	// get the block size
-	if gms.blockSize, err = eng.GetSpriteSize(constants.SpriteSheet, containerSprite); err != nil {
+	if gms.blockSize, err = eng.GetSpriteSize(constants.SpriteSheet, boxSprite); err != nil {
 		return err
 	}
 
@@ -435,19 +434,12 @@ func (gms *gameMapSystem) addSprites(world *goecs.World) {
 
 			ent.Add(sprite.Sprite{
 				Sheet: constants.SpriteSheet,
-				Name:  containerSprite,
+				Name:  boxSprite,
 				Scale: gms.gs.Min * blockScale,
 			})
 
 			clr := colors[(gms.data[c][r] - fill)]
-
-			ent.Add(effects.AlternateColor{
-				From:  clr,
-				To:    clr.Blend(color.Black, 0.15),
-				Time:  0.25,
-				Delay: 0,
-			})
-
+			ent.Add(clr)
 			ent.Add(effects.Layer{Depth: 0})
 			ent.Add(component.Block{
 				C: c,
@@ -505,7 +497,7 @@ func (gms *gameMapSystem) collisionListener(world *goecs.World, signal interface
 
 			nb.Add(sprite.Sprite{
 				Sheet: constants.SpriteSheet,
-				Name:  sidecarSprite,
+				Name:  boxSprite,
 				Scale: gms.gs.Min * blockScale,
 			})
 
