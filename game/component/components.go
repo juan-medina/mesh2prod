@@ -36,17 +36,23 @@ type Block struct {
 	ClearOn float32
 }
 
+// FloatText is a component for a floating text
+type FloatText struct{}
+
 type types struct {
 	// Bullet is the reflect.Type for component.Bullet
 	Bullet reflect.Type
 	// Block is the reflect.Type for component.Block
 	Block reflect.Type
+	// FloatText is the reflect.Type for component.FloatText
+	FloatText reflect.Type
 }
 
 // TYPE hold the reflect.Type for our components
 var TYPE = types{
-	Bullet: reflect.TypeOf(Bullet{}),
-	Block:  reflect.TypeOf(Block{}),
+	Bullet:    reflect.TypeOf(Bullet{}),
+	Block:     reflect.TypeOf(Block{}),
+	FloatText: reflect.TypeOf(FloatText{}),
 }
 
 type gets struct {
@@ -54,6 +60,8 @@ type gets struct {
 	Bullet func(e *goecs.Entity) Bullet
 	// Block gets a component.Block from a goecs.Entity
 	Block func(e *goecs.Entity) Block
+	// FloatText gets a component.FloatText from a goecs.Entity
+	FloatText func(e *goecs.Entity) FloatText
 }
 
 // Get a geometry component
@@ -66,5 +74,9 @@ var Get = gets{
 	// Bullet gets a component.Bullet from a goecs.Entity
 	Block: func(e *goecs.Entity) Block {
 		return e.Get(TYPE.Block).(Block)
+	},
+	// FloatText gets a component.FloatText from a goecs.Entity
+	FloatText: func(e *goecs.Entity) FloatText {
+		return e.Get(TYPE.FloatText).(FloatText)
 	},
 }

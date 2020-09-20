@@ -31,6 +31,7 @@ import (
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/components/sprite"
 	"github.com/juan-medina/gosge/components/ui"
+	"github.com/juan-medina/mesh2prod/game/component"
 	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
 )
@@ -181,6 +182,7 @@ func (ss *scoreSystem) pointsListener(world *goecs.World, signal interface{}, _ 
 					Y: -textScrollSpeedY * ss.gs.Point.Y,
 				},
 			},
+			component.FloatText{},
 		)
 
 	}
@@ -212,7 +214,7 @@ func (ss *scoreSystem) pointsDisplaySystem(_ *goecs.World, delta float32) error 
 // fate scroll text
 func (ss *scoreSystem) textFadeSystem(world *goecs.World, delta float32) error {
 	// get any text that is moving
-	for it := world.Iterator(ui.TYPE.Text, color.TYPE.Solid, movement.Type); it != nil; it = it.Next() {
+	for it := world.Iterator(ui.TYPE.Text, color.TYPE.Solid, movement.Type, component.TYPE.FloatText); it != nil; it = it.Next() {
 		ent := it.Value()
 		// get the current color
 		clr := color.Get.Solid(ent)
