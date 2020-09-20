@@ -34,6 +34,7 @@ type Bullet struct{}
 type Block struct {
 	C, R    int
 	ClearOn float32
+	Text    *goecs.Entity
 }
 
 // FloatText is a component for a floating text

@@ -31,6 +31,7 @@ import (
 	"github.com/juan-medina/gosge/components/effects"
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/components/sprite"
+	"github.com/juan-medina/gosge/components/ui"
 	"github.com/juan-medina/gosge/events"
 	"github.com/juan-medina/mesh2prod/game/collision"
 	"github.com/juan-medina/mesh2prod/game/component"
@@ -55,11 +56,13 @@ const (
 
 // logic constants
 const (
-	blockSpeed = 25                        // our block speed
-	boxSprite  = "box.png"                 // block sprite
-	blockScale = 0.5                       // block scale
-	popSound   = "resources/audio/pop.wav" // block pop
-	hitSound   = "resources/audio/hit.wav" // block hit
+	blockSpeed = 25                            // our block speed
+	boxSprite  = "box.png"                     // block sprite
+	blockScale = 0.5                           // block scale
+	popSound   = "resources/audio/pop.wav"     // block pop
+	hitSound   = "resources/audio/hit.wav"     // block hit
+	font       = "resources/fonts/go_mono.fnt" // our text font
+	fontSize   = 30                            // top text fon size
 )
 
 type gameMapSystem struct {
@@ -71,6 +74,7 @@ type gameMapSystem struct {
 	dr           geometry.Size     // design resolution
 	blockSize    geometry.Size     // block size
 	scrollMarker *goecs.Entity     // track the scroll position
+	eng          *gosge.Engine     // the game engine
 }
 
 var (
@@ -212,16 +216,37 @@ func (gms *gameMapSystem) clearArea(fromC, fromR, toC, toR int) {
 			if gms.sprs[c][r] != nil {
 				block := component.Get.Block(gms.sprs[c][r])
 				block.ClearOn = 5
-				gms.sprs[c][r].Set(block)
-				gms.sprs[c][r].Remove(color.TYPE.Solid)
-				gms.sprs[c][r].Remove(effects.TYPE.AlternateColor)
-				gms.sprs[c][r].Remove(effects.TYPE.AlternateColorState)
-				gms.sprs[c][r].Set(effects.AlternateColor{
+				ent := gms.sprs[c][r]
+				ent.Remove(color.TYPE.Solid)
+				ent.Remove(effects.TYPE.AlternateColor)
+				ent.Remove(effects.TYPE.AlternateColorState)
+				ent.Set(effects.AlternateColor{
 					From:  color.Red,
 					To:    color.Red.Alpha(127),
 					Time:  0.25,
 					Delay: 0,
 				})
+				pos := geometry.Get.Point(gms.sprs[c][r])
+				if block.Text == nil {
+					block.Text = gms.eng.World().AddEntity(
+						ui.Text{
+							String:     "0",
+							Size:       fontSize,
+							Font:       font,
+							VAlignment: ui.MiddleVAlignment,
+							HAlignment: ui.CenterHAlignment,
+						},
+						pos,
+						color.White,
+						movement.Movement{
+							Amount: geometry.Point{
+								X: -blockSpeed * gms.gs.Point.X,
+							},
+						},
+						effects.Layer{Depth: -1},
+					)
+				}
+				ent.Set(block)
 			}
 		}
 	}
@@ -278,6 +303,11 @@ func fromString(str string) *gameMapSystem {
 func (gms *gameMapSystem) load(eng *gosge.Engine) error {
 	rand.Seed(time.Now().UnixNano())
 	var err error
+
+	// pre-load font
+	if err = eng.LoadFont(font); err != nil {
+		return err
+	}
 
 	// pop sound
 	if err = eng.LoadSound(popSound); err != nil {
@@ -542,12 +572,21 @@ func (gms *gameMapSystem) clearSystem(world *goecs.World, delta float32) error {
 				pos := geometry.Get.Point(ent)
 				totalX += pos.X
 				totalY += pos.Y
+				// remove text
+				_ = world.Remove(block.Text)
+				block.Text = nil
+				ent.Set(block)
 				// remove entity
 				_ = world.Remove(ent)
 				// remove from our slices
 				gms.data[block.C][block.R] = empty
 				gms.sprs[block.C][block.R] = nil
 				total++
+			} else {
+				sec := fmt.Sprintf("%0.0f", block.ClearOn)
+				text := ui.Get.Text(block.Text)
+				text.String = sec
+				block.Text.Set(text)
 			}
 		}
 	}
@@ -579,6 +618,7 @@ func System(engine *gosge.Engine, gs geometry.Scale, dr geometry.Size) error {
 
 	gms.gs = gs
 	gms.dr = dr
+	gms.eng = engine
 
 	return gms.load(engine)
 }
