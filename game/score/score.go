@@ -93,20 +93,20 @@ func (ss *scoreSystem) load(eng *gosge.Engine) error {
 
 	// calculate the bc coin position, top right
 	bcPos := geometry.Point{
-		X: ss.dr.Width*ss.gs.Point.X - (size.Width * ss.gs.Point.X * blockChainScale * 0.5),
+		X: (ss.dr.Width * ss.gs.Point.X) - (size.Width * blockChainScale * 0.5 * ss.gs.Max),
 		Y: size.Height * 0.5 * blockChainScale * ss.gs.Point.Y,
 	}
 
 	// add a extra gap
-	bcPos.X -= bcGapX * ss.gs.Point.X
-	bcPos.Y += bcGapY * ss.gs.Point.Y
+	bcPos.X -= bcGapX * ss.gs.Max
+	bcPos.Y += bcGapY * ss.gs.Max
 
 	// add the bc coin
 	world.AddEntity(
 		sprite.Sprite{
 			Sheet: constants.SpriteSheet,
 			Name:  blockChainSprite,
-			Scale: ss.gs.Min * blockChainScale,
+			Scale: ss.gs.Max * blockChainScale,
 		},
 		bcPos,
 		effects.Layer{Depth: -10},
@@ -116,13 +116,13 @@ func (ss *scoreSystem) load(eng *gosge.Engine) error {
 	ss.textLabel = world.AddEntity(
 		ui.Text{
 			String:     "00000000",
-			Size:       fontSize * ss.gs.Min,
+			Size:       fontSize * ss.gs.Max,
 			Font:       font,
 			VAlignment: ui.MiddleVAlignment,
 			HAlignment: ui.RightHAlignment,
 		},
 		geometry.Point{
-			X: bcPos.X - (size.Height * blockChainScale * ss.gs.Point.X * 0.75),
+			X: bcPos.X - (size.Height * blockChainScale * ss.gs.Max * 0.75),
 			Y: bcPos.Y,
 		},
 		bcColor,
@@ -222,7 +222,7 @@ func (ss *scoreSystem) addFloatPoints(world *goecs.World, base, extra int, at ge
 	world.AddEntity(
 		ui.Text{
 			String:     text,
-			Size:       floatPointSize * ss.gs.Min,
+			Size:       floatPointSize * ss.gs.Max,
 			Font:       font,
 			VAlignment: ui.MiddleVAlignment,
 			HAlignment: ui.CenterHAlignment,
@@ -232,8 +232,8 @@ func (ss *scoreSystem) addFloatPoints(world *goecs.World, base, extra int, at ge
 		effects.Layer{Depth: -10},
 		movement.Movement{
 			Amount: geometry.Point{
-				X: -textScrollSpeedX * ss.gs.Point.X,
-				Y: -textScrollSpeedY * ss.gs.Point.Y,
+				X: -textScrollSpeedX * ss.gs.Max,
+				Y: -textScrollSpeedY * ss.gs.Max,
 			},
 		},
 		component.FloatText{},

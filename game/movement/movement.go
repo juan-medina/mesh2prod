@@ -45,8 +45,8 @@ func (ms movementSystem) system(world *goecs.World, delta float32) error {
 		mov := ent.Get(Type).(Movement)
 
 		// increment position and clamp to the Min/Max
-		pos.Y += mov.Amount.Y * delta * ms.gs.Point.X
-		pos.X += mov.Amount.X * delta * ms.gs.Point.Y
+		pos.Y += mov.Amount.Y * delta * ms.gs.Max
+		pos.X += mov.Amount.X * delta * ms.gs.Max
 
 		// if we have constrains
 		if ent.Contains(ConstrainType) {

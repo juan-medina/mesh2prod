@@ -109,7 +109,7 @@ func (gms *targetSystem) addSprites(world *goecs.World) {
 		sprite.Sprite{
 			Sheet: constants.SpriteSheet,
 			Name:  markSprite,
-			Scale: gms.gs.Min * targetScale,
+			Scale: gms.gs.Max * targetScale,
 		},
 		effects.Layer{Depth: 0},
 		effects.AlternateColor{
@@ -149,7 +149,7 @@ func (gms *targetSystem) findTargetSystem(world *goecs.World, _ float32) error {
 	var found *goecs.Entity = nil
 
 	// half size of block
-	halfSize := gms.targetSize.Height * targetScale * gms.gs.Point.Y * 0.5
+	halfSize := gms.targetSize.Height * targetScale * gms.gs.Max * 0.5
 
 	// screen width
 	screenWith := gms.dr.Width * gms.gs.Point.X
@@ -176,7 +176,7 @@ func (gms *targetSystem) findTargetSystem(world *goecs.World, _ float32) error {
 			// diff in y
 			diffX := blockPos.X - gms.gunPos.X
 			// don't target to close things
-			if diffX > targetGapX*gms.gs.Point.X {
+			if diffX > targetGapX*gms.gs.Max {
 				if diffX < closeX {
 					closeX = diffX
 					found = ent
@@ -195,19 +195,19 @@ func (gms *targetSystem) findTargetSystem(world *goecs.World, _ float32) error {
 
 		// move line straight from gun
 		line.To = geometry.Point{
-			X: gms.dr.Width * gms.gs.Point.X,
+			X: gms.dr.Width * gms.gs.Max,
 			Y: gms.gunPos.Y,
 		}
 	} else {
 		pos := geometry.Get.Point(found)
 		targetPos := geometry.Point{
-			X: pos.X - (gms.targetSize.Width * gms.gs.Point.X * targetScale),
+			X: pos.X - (gms.targetSize.Width * gms.gs.Max * targetScale),
 			Y: pos.Y,
 		}
 		gms.target.Set(targetPos)
 		// calculate line pos
 		line.To = geometry.Point{
-			X: targetPos.X - (gms.targetSize.Width/2)*targetScale*gms.gs.Point.X,
+			X: targetPos.X - (gms.targetSize.Width/2)*targetScale*gms.gs.Max,
 			Y: targetPos.Y,
 		}
 	}
@@ -264,7 +264,7 @@ func (gms targetSystem) createBullet(world *goecs.World) {
 					"moving": {
 						Sheet:  constants.SpriteSheet,
 						Base:   bulletSprite,
-						Scale:  gms.gs.Min * bulletScale,
+						Scale:  gms.gs.Max * bulletScale,
 						Frames: bulletFrames,
 						Delay:  bulletFramesDelay,
 					},
@@ -275,8 +275,8 @@ func (gms targetSystem) createBullet(world *goecs.World) {
 			gms.gunPos,
 			movement.Movement{
 				Amount: geometry.Point{
-					Y: velY * gms.gs.Point.Y,
-					X: bulletSpeed * gms.gs.Point.X,
+					Y: velY * gms.gs.Max,
+					X: bulletSpeed * gms.gs.Max,
 				},
 			},
 			movement.Constrain{
@@ -285,7 +285,7 @@ func (gms targetSystem) createBullet(world *goecs.World) {
 					Y: minY,
 				},
 				Max: geometry.Point{
-					X: gms.dr.Width * gms.gs.Point.X,
+					X: gms.dr.Width * gms.gs.Max,
 					Y: maxY,
 				},
 			},
@@ -301,7 +301,7 @@ func (gms *targetSystem) bulletSystem(world *goecs.World, _ float32) error {
 	for it := world.Iterator(component.TYPE.Bullet, geometry.TYPE.Point); it != nil; it = it.Next() {
 		bullet := it.Value()
 		pos := geometry.Get.Point(bullet)
-		if pos.X >= gms.dr.Width*gms.gs.Point.X {
+		if pos.X >= gms.dr.Width*gms.gs.Max {
 			_ = world.Remove(bullet)
 		}
 	}

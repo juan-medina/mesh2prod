@@ -66,7 +66,7 @@ func (bs *bgSystem) load(eng *gosge.Engine) error {
 				Width:  bs.dr.Width,
 				Height: bs.dr.Height,
 			},
-			Scale: bs.gs.Min,
+			Scale: bs.gs.Max,
 		},
 		geometry.Point{},
 		color.Gradient{
@@ -127,7 +127,7 @@ func (bs *bgSystem) resetCloud(ent *goecs.Entity, from float32) error {
 	spr := sprite.Sprite{
 		Sheet: constants.SpriteSheet,
 		Name:  sf,
-		Scale: bs.gs.Min * scale,
+		Scale: bs.gs.Max * scale,
 		FlipX: rand.Intn(2) == 0, // random flipped horizontally
 	}
 
@@ -146,17 +146,17 @@ func (bs *bgSystem) resetCloud(ent *goecs.Entity, from float32) error {
 	top := rand.Intn(2) == 0
 
 	if top {
-		y = ((bs.dr.Height / 2) * bs.gs.Point.Y) * scale
+		y = ((bs.dr.Height / 2) * bs.gs.Max) * scale
 		y += bs.dr.Height / 6
 	} else {
-		y = bs.dr.Height * bs.gs.Point.Y
+		y = bs.dr.Height * bs.gs.Max
 		y -= bs.dr.Height / 6
-		y -= ((bs.dr.Height / 2) * bs.gs.Point.Y) * scale
+		y -= ((bs.dr.Height / 2) * bs.gs.Max) * scale
 	}
 
 	// calculate position
 	pos := geometry.Point{
-		X: (rand.Float32()*bs.dr.Width + from) * bs.gs.Point.X,
+		X: (rand.Float32()*bs.dr.Width + from) * bs.gs.Max,
 		Y: y,
 	}
 
@@ -169,7 +169,7 @@ func (bs *bgSystem) resetCloud(ent *goecs.Entity, from float32) error {
 	}
 
 	// parallax component
-	rst := Reset{At: -((size.Width / 2) * bs.gs.Point.X * scale)}
+	rst := Reset{At: -((size.Width / 2) * bs.gs.Max * scale)}
 
 	// update entity
 	ent.Set(spr)
@@ -196,7 +196,7 @@ func (bs *bgSystem) resetSystem(world *goecs.World, _ float32) error {
 		if pos.X < rst.At {
 			if size, err := bs.eng.GetSpriteSize(spr.Sheet, spr.Name); err == nil {
 				ss := (size.Width / 2) * spr.Scale
-				if err := bs.resetCloud(ent, (bs.dr.Width+ss)*bs.gs.Min); err != nil {
+				if err := bs.resetCloud(ent, (bs.dr.Width+ss)*bs.gs.Max); err != nil {
 					return err
 				}
 			} else {

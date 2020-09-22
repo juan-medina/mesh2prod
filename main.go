@@ -35,6 +35,10 @@ var opt = options.Options{
 	Title:      "mesh2prod",
 	BackGround: color.Black,
 	Icon:       "resources/icon/icon.png",
+	// Uncomment this for using windowed mode
+	// Windowed: true,
+	// Width:    2048,
+	// Height:   1536,
 }
 
 func main() {

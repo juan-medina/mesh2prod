@@ -39,8 +39,8 @@ import (
 const (
 	animSpeedSlow    = 0.65         // animation slow speed
 	meshSpriteAnim   = "box%d.png"  // the mesh sprite
-	meshScale        = 1            // mesh scale
-	meshX            = 310          // mesh scale
+	meshScale        = 0.5          // mesh scale
+	meshX            = 10           // mesh scale
 	meshSpeed        = float32(200) // mesh speed
 	topMeshSpeed     = float32(250) // top mesh speed
 	joinShiftX       = 5            // shift X for the joint
@@ -80,7 +80,7 @@ func (ms *meshSystem) load(eng *gosge.Engine) error {
 				"flying": {
 					Sheet:  constants.SpriteSheet,
 					Base:   meshSpriteAnim,
-					Scale:  ms.gs.Min * meshScale,
+					Scale:  ms.gs.Max * meshScale,
 					Frames: 2,
 					Delay:  0.065,
 				},
@@ -89,8 +89,8 @@ func (ms *meshSystem) load(eng *gosge.Engine) error {
 			Speed:   animSpeedSlow,
 		},
 		geometry.Point{
-			X: meshX * ms.gs.Point.X,
-			Y: ms.dr.Height / 2 * ms.gs.Point.Y,
+			X: (ms.size.Width / 2 * meshScale * ms.gs.Max) + meshX*ms.gs.Max,
+			Y: ms.dr.Height / 2 * ms.gs.Max,
 		},
 		movement.Movement{
 			Amount: geometry.Point{
@@ -101,11 +101,11 @@ func (ms *meshSystem) load(eng *gosge.Engine) error {
 		movement.Constrain{
 			Min: geometry.Point{
 				X: 0,
-				Y: halveHeight * ms.gs.Point.X,
+				Y: halveHeight * ms.gs.Max,
 			},
 			Max: geometry.Point{
-				X: ms.dr.Width * ms.gs.Point.X,
-				Y: (ms.dr.Height - halveHeight) * ms.gs.Point.Y,
+				X: ms.dr.Width * ms.gs.Max,
+				Y: (ms.dr.Height - halveHeight) * ms.gs.Max,
 			},
 		},
 		effects.Layer{Depth: 0},
@@ -116,11 +116,11 @@ func (ms *meshSystem) load(eng *gosge.Engine) error {
 		ms.line[ln] = world.AddEntity(
 			shapes.Line{
 				To:        geometry.Point{},
-				Thickness: lineThickness * ms.gs.Min,
+				Thickness: lineThickness * ms.gs.Max,
 			},
 			geometry.Point{},
 			effects.Layer{Depth: 1},
-			color.Gopher,
+			color.Gray,
 		)
 	}
 
@@ -143,7 +143,7 @@ func (ms *meshSystem) followSystem(_ *goecs.World, delta float32) error {
 	diffY := ms.planePos.Y - meshPos.Y
 
 	// increase Movement up or down
-	mov.Amount.Y = diffY * meshSpeed * ms.gs.Point.Y * delta
+	mov.Amount.Y = diffY * meshSpeed * ms.gs.Max * delta
 
 	// clamp speed
 	if mov.Amount.Y > topMeshSpeed {
@@ -159,14 +159,14 @@ func (ms *meshSystem) followSystem(_ *goecs.World, delta float32) error {
 	var linePos geometry.Point
 
 	// calculate X, the same for both lines
-	linePos.X = meshPos.X + (((ms.size.Width / 2) - joinShiftX) * meshScale * ms.gs.Point.X)
+	linePos.X = meshPos.X + (((ms.size.Width / 2) - joinShiftX) * meshScale * ms.gs.Max)
 
 	// top line
-	linePos.Y = meshPos.Y - (joinShiftYTop * meshScale * ms.gs.Point.Y)
+	linePos.Y = meshPos.Y - (joinShiftYTop * meshScale * ms.gs.Max)
 	ms.line[0].Set(linePos)
 
 	// bottom line
-	linePos.Y = meshPos.Y + (joinShiftYBottom * meshScale * ms.gs.Point.Y)
+	linePos.Y = meshPos.Y + (joinShiftYBottom * meshScale * ms.gs.Max)
 	ms.line[1].Set(linePos)
 
 	return nil
@@ -183,7 +183,9 @@ func (ms *meshSystem) planeChanges(_ *goecs.World, signal interface{}, _ float32
 			line.To = e.Joint // we will use the joint position send by the plane
 			ms.line[ln].Set(line)
 		}
-
+		/*pos := geometry.Get.Point(ms.mesh)
+		pos.X = ms.planePos.X - (300 * ms.gs.Max)
+		ms.mesh.Set(pos)*/
 	}
 	return nil
 }

@@ -38,7 +38,7 @@ import (
 const (
 	gopherPlaneAnim = "gopher_plane_%d.png" // base animation for our gopher
 	planeScale      = float32(0.5)          // plane scale
-	planeX          = 720                   // plane X position
+	planeX          = 400                   // plane X position
 	planeSpeed      = 320                   // plane speed
 	animSpeedSlow   = 0.65                  // animation slow speed
 	animSpeedFast   = 1                     // animation fast speed
@@ -78,7 +78,7 @@ func (ps *planeSystem) load(eng *gosge.Engine) error {
 				"flying": {
 					Sheet:  constants.SpriteSheet,
 					Base:   gopherPlaneAnim,
-					Scale:  ps.gs.Min * planeScale,
+					Scale:  ps.gs.Max * planeScale,
 					Frames: 2,
 					Delay:  0.065,
 				},
@@ -87,8 +87,8 @@ func (ps *planeSystem) load(eng *gosge.Engine) error {
 			Speed:   animSpeedSlow,
 		},
 		geometry.Point{
-			X: planeX * ps.gs.Point.X,
-			Y: ps.dr.Height / 2 * ps.gs.Point.Y,
+			X: (ps.size.Width / 2 * planeScale * ps.gs.Max) + planeX*ps.gs.Max,
+			Y: ps.dr.Height / 2 * ps.gs.Max,
 		},
 		movement.Movement{
 			Amount: geometry.Point{},
@@ -96,11 +96,11 @@ func (ps *planeSystem) load(eng *gosge.Engine) error {
 		movement.Constrain{
 			Min: geometry.Point{
 				X: 0,
-				Y: halveHeight * ps.gs.Point.X,
+				Y: halveHeight * ps.gs.Max,
 			},
 			Max: geometry.Point{
-				X: ps.dr.Width * ps.gs.Point.X,
-				Y: (ps.dr.Height - halveHeight) * ps.gs.Point.Y,
+				X: ps.dr.Width * ps.gs.Max,
+				Y: (ps.dr.Height - halveHeight) * ps.gs.Max,
 			},
 		},
 		effects.Layer{Depth: 0},
@@ -164,13 +164,13 @@ func (ps *planeSystem) notifyPositionChanges(world *goecs.World, _ float32) erro
 		ps.lastPos = current
 
 		joint := geometry.Point{
-			X: current.X - (((ps.size.Width / 2) - joinShiftX) * planeScale * ps.gs.Point.X),
-			Y: current.Y - (joinShiftY * planeScale * ps.gs.Point.Y),
+			X: current.X - (((ps.size.Width / 2) - joinShiftX) * planeScale * ps.gs.Max),
+			Y: current.Y - (joinShiftY * planeScale * ps.gs.Max),
 		}
 
 		gun := geometry.Point{
-			X: current.X + (gunShiftX * planeScale * ps.gs.Point.X),
-			Y: current.Y + (gunShiftY * planeScale * ps.gs.Point.Y),
+			X: current.X + (gunShiftX * planeScale * ps.gs.Max),
+			Y: current.Y + (gunShiftY * planeScale * ps.gs.Max),
 		}
 
 		return world.Signal(PositionChangeEvent{Pos: current, Joint: joint, Gun: gun})

@@ -240,7 +240,7 @@ func (gms *gameMapSystem) clearArea(fromC, fromR, toC, toR int) {
 						color.White,
 						movement.Movement{
 							Amount: geometry.Point{
-								X: -blockSpeed * gms.gs.Point.X,
+								X: -blockSpeed * gms.gs.Max,
 							},
 						},
 						effects.Layer{Depth: -1},
@@ -446,7 +446,7 @@ func (gms *gameMapSystem) generate() {
 
 // add sprite from map state
 func (gms *gameMapSystem) addSprites(world *goecs.World) {
-	offset := gms.dr.Width * .85 * gms.gs.Point.X
+	offset := gms.dr.Width * gms.gs.Point.X
 
 	// add a scroll marker
 	gms.scrollMarker = gms.addEntity(world, 0, 0, offset)
@@ -465,7 +465,7 @@ func (gms *gameMapSystem) addSprites(world *goecs.World) {
 			ent.Add(sprite.Sprite{
 				Sheet: constants.SpriteSheet,
 				Name:  boxSprite,
-				Scale: gms.gs.Min * blockScale,
+				Scale: gms.gs.Max * blockScale,
 			})
 
 			clr := colors[(gms.data[c][r] - fill)]
@@ -482,11 +482,11 @@ func (gms *gameMapSystem) addSprites(world *goecs.World) {
 
 // create a entity on that col and row, with movement
 func (gms *gameMapSystem) addEntity(world *goecs.World, col, row int, offset float32) *goecs.Entity {
-	px := float32(col) * (gms.blockSize.Width * gms.gs.Point.X * blockScale)
-	px += (gms.blockSize.Width / 2) * gms.gs.Point.X * blockScale
+	px := float32(col) * (gms.blockSize.Width * gms.gs.Max * blockScale)
+	px += (gms.blockSize.Width / 2) * gms.gs.Max * blockScale
 	px += offset
-	py := float32(row) * (gms.blockSize.Height * gms.gs.Point.Y * blockScale)
-	py += (gms.blockSize.Height / 2) * gms.gs.Point.Y * blockScale
+	py := float32(row) * (gms.blockSize.Height * gms.gs.Max * blockScale)
+	py += (gms.blockSize.Height / 2) * gms.gs.Max * blockScale
 
 	return world.AddEntity(
 		geometry.Point{
@@ -495,7 +495,7 @@ func (gms *gameMapSystem) addEntity(world *goecs.World, col, row int, offset flo
 		},
 		movement.Movement{
 			Amount: geometry.Point{
-				X: -blockSpeed * gms.gs.Point.X,
+				X: -blockSpeed * gms.gs.Max,
 			},
 		},
 	)
@@ -505,7 +505,7 @@ func (gms *gameMapSystem) bulletSystem(world *goecs.World, _ float32) error {
 	for it := world.Iterator(component.TYPE.Bullet, geometry.TYPE.Point); it != nil; it = it.Next() {
 		bullet := it.Value()
 		pos := geometry.Get.Point(bullet)
-		if pos.X >= gms.dr.Width*gms.gs.Point.X {
+		if pos.X >= gms.dr.Width*gms.gs.Max {
 			_ = world.Remove(bullet)
 		}
 	}
@@ -520,7 +520,7 @@ func (gms *gameMapSystem) collisionListener(world *goecs.World, signal interface
 		c := e.Block.C - 1
 		r := e.Block.R
 		if c > 0 {
-			x := pos.X - gms.blockSize.Width*0.5*blockScale*gms.gs.Point.X
+			x := pos.X - gms.blockSize.Width*0.5*blockScale*gms.gs.Max
 
 			// create a sprite
 			nb := gms.addEntity(world, c, r, x)
@@ -528,7 +528,7 @@ func (gms *gameMapSystem) collisionListener(world *goecs.World, signal interface
 			nb.Add(sprite.Sprite{
 				Sheet: constants.SpriteSheet,
 				Name:  boxSprite,
-				Scale: gms.gs.Min * blockScale,
+				Scale: gms.gs.Max * blockScale,
 			})
 
 			nb.Add(color.Red)
