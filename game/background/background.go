@@ -61,7 +61,7 @@ func (bs *bgSystem) load(eng *gosge.Engine) error {
 
 	// add a gradient background
 	world.AddEntity(
-		shapes.Box{
+		shapes.SolidBox{
 			Size: geometry.Size{
 				Width:  bs.dr.Width,
 				Height: bs.dr.Height,
