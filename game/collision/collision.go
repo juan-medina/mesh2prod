@@ -89,9 +89,7 @@ func (cs *collisionSystem) checkPlaneBlock(plane *goecs.Entity, world *goecs.Wor
 	for it := world.Iterator(component.TYPE.Block, geometry.TYPE.Point, sprite.TYPE); it != nil; it = it.Next() {
 		block := it.Value()
 		if cs.spriteCollide(plane, block) {
-			blockC := component.Get.Block(block)
-			_ = world.Signal(PlaneHitBlockEvent{Block: blockC})
-			_ = world.Remove(block)
+			cs.removeBlock(block, world, true)
 		}
 	}
 }
@@ -100,10 +98,24 @@ func (cs *collisionSystem) checkMeshBlock(mesh *goecs.Entity, world *goecs.World
 	for it := world.Iterator(component.TYPE.Block, geometry.TYPE.Point, sprite.TYPE); it != nil; it = it.Next() {
 		block := it.Value()
 		if cs.spriteCollide(mesh, block) {
-			blockC := component.Get.Block(block)
-			_ = world.Signal(MeshHitBlockEvent{Block: blockC})
-			_ = world.Remove(block)
+			cs.removeBlock(block, world, false)
 		}
+	}
+}
+
+func (cs *collisionSystem) removeBlock(block *goecs.Entity, world *goecs.World, isPlane bool) {
+	blockC := component.Get.Block(block)
+	if blockC.Text != nil {
+		_ = world.Remove(blockC.Text)
+		blockC.Text = nil
+		block.Set(blockC)
+	}
+
+	_ = world.Remove(block)
+	if isPlane {
+		_ = world.Signal(PlaneHitBlockEvent{Block: blockC})
+	} else {
+		_ = world.Signal(MeshHitBlockEvent{Block: blockC})
 	}
 }
 
