@@ -40,6 +40,12 @@ type Block struct {
 // FloatText is a component for a floating text
 type FloatText struct{}
 
+// Plane is a component for the plane
+type Plane struct{}
+
+// Mesh is a component for the mesh
+type Mesh struct{}
+
 type types struct {
 	// Bullet is the reflect.Type for component.Bullet
 	Bullet reflect.Type
@@ -47,6 +53,10 @@ type types struct {
 	Block reflect.Type
 	// FloatText is the reflect.Type for component.FloatText
 	FloatText reflect.Type
+	// Plane is the reflect.Type for component.Plane
+	Plane reflect.Type
+	// Mesh is the reflect.Type for component.Mesh
+	Mesh reflect.Type
 }
 
 // TYPE hold the reflect.Type for our components
@@ -54,6 +64,8 @@ var TYPE = types{
 	Bullet:    reflect.TypeOf(Bullet{}),
 	Block:     reflect.TypeOf(Block{}),
 	FloatText: reflect.TypeOf(FloatText{}),
+	Plane:     reflect.TypeOf(Plane{}),
+	Mesh:      reflect.TypeOf(Mesh{}),
 }
 
 type gets struct {
@@ -63,6 +75,10 @@ type gets struct {
 	Block func(e *goecs.Entity) Block
 	// FloatText gets a component.FloatText from a goecs.Entity
 	FloatText func(e *goecs.Entity) FloatText
+	// Plane gets a component.Plane from a goecs.Entity
+	Plane func(e *goecs.Entity) Plane
+	// Mesh gets a component.Mesh from a goecs.Entity
+	Mesh func(e *goecs.Entity) Mesh
 }
 
 // Get a geometry component
@@ -79,5 +95,13 @@ var Get = gets{
 	// FloatText gets a component.FloatText from a goecs.Entity
 	FloatText: func(e *goecs.Entity) FloatText {
 		return e.Get(TYPE.FloatText).(FloatText)
+	},
+	// Plane gets a component.Plane from a goecs.Entity
+	Plane: func(e *goecs.Entity) Plane {
+		return e.Get(TYPE.Plane).(Plane)
+	},
+	// Mesh gets a component.Mesh from a goecs.Entity
+	Mesh: func(e *goecs.Entity) Mesh {
+		return e.Get(TYPE.Mesh).(Mesh)
 	},
 }

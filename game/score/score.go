@@ -52,6 +52,7 @@ const (
 	bcGapY                 = 5                             // blockchain coin gap Y
 	bcGapX                 = 5                             // blockchain coin gap X
 	pointPerBlock          = 5                             // points given per each block
+	pointLosePerBlock      = 20                            // points loosing when hit the plane
 	textAlphaDecreesPerSec = 127                           // alpha decrease per sec in floating text
 	textScrollSpeedY       = 100                           // text scroll y
 	textScrollSpeedX       = 25                            // text scroll x (match block scroll)
@@ -64,12 +65,14 @@ type scoreSystem struct {
 	total     int            // total points
 	lastScore int            // last score
 	toAdd     int            // score to add
+	toSub     int            // score to sub
 	textLabel *goecs.Entity  // our text
 }
 
 var (
 	bcColor       = color.Solid{R: 227, G: 140, B: 41, A: 255} // our bc text color
 	positiveColor = color.Green                                // positive numbers color
+	negativeColor = color.Red                                  // negative numbers color
 )
 
 // load the system
@@ -145,17 +148,25 @@ func (ss *scoreSystem) pointsListener(world *goecs.World, signal interface{}, _ 
 	switch e := signal.(type) {
 	// we got points
 	case PointsEvent:
-		// base points
-		base := e.Total * pointPerBlock
-		// multiply by 1 per each 4 blocks
-		extra := e.Total / 4
+		base := 0
+		extra := 0
 
-		// if we have any extra add it
-		if extra > 0 {
-			ss.toAdd += base * extra
+		if e.Total > 0 {
+			// base points
+			base = e.Total * pointPerBlock
+			// multiply by 1 per each 4 blocks
+			extra = e.Total / 4
+
+			// if we have any extra add it
+			if extra > 0 {
+				ss.toAdd += base * extra
+			} else {
+				// add the base
+				ss.toAdd += base
+			}
 		} else {
-			// add the base
-			ss.toAdd += base
+			base = e.Total * pointLosePerBlock
+			ss.toSub += -base
 		}
 
 		ss.addFloatPoints(world, base, extra, e.At)
@@ -171,6 +182,14 @@ func (ss *scoreSystem) pointsDisplaySystem(_ *goecs.World, delta float32) error 
 		adding := int(pointsToAddPerSec * delta)
 		ss.toAdd -= adding
 		ss.total += adding
+	}
+
+	// if we have points to sub
+	if ss.toSub > 0 {
+		// add just some of them per tick
+		subbing := int(pointsToAddPerSec * delta)
+		ss.toAdd -= subbing
+		ss.total -= subbing
 	}
 
 	// if the score need to be update, update it
@@ -212,12 +231,19 @@ func (ss *scoreSystem) textFadeSystem(world *goecs.World, delta float32) error {
 
 func (ss *scoreSystem) addFloatPoints(world *goecs.World, base, extra int, at geometry.Point) {
 	var text string
-	// format text for our floating text
-	if extra > 1 {
-		text = fmt.Sprintf("+ %dx%d", base, extra)
+	txtColor := positiveColor
+	if base > 0 {
+		// format text for our floating text
+		if extra > 1 {
+			text = fmt.Sprintf("+%dx%d", base, extra)
+		} else {
+			text = fmt.Sprintf("+%d", base)
+		}
 	} else {
-		text = fmt.Sprintf("+ %d", base)
+		text = fmt.Sprintf("%d", base)
+		txtColor = negativeColor
 	}
+
 	// add the floating text
 	world.AddEntity(
 		ui.Text{
@@ -228,7 +254,7 @@ func (ss *scoreSystem) addFloatPoints(world *goecs.World, base, extra int, at ge
 			HAlignment: ui.CenterHAlignment,
 		},
 		at,
-		positiveColor,
+		txtColor,
 		effects.Layer{Depth: -10},
 		movement.Movement{
 			Amount: geometry.Point{

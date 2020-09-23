@@ -543,7 +543,24 @@ func (gms *gameMapSystem) collisionListener(world *goecs.World, signal interface
 			gms.place(c, r)
 			return world.Signal(events.PlaySoundEvent{Name: hitSound})
 		}
-
+	case collision.PlaneHitBlockEvent:
+		block := e.Block
+		at := geometry.Get.Point(gms.sprs[block.C][block.R])
+		if err := world.Signal(score.PointsEvent{Total: -1, At: at}); err != nil {
+			return err
+		}
+		gms.data[block.C][block.R] = clear
+		gms.sprs[block.C][block.R] = nil
+		return world.Signal(events.PlaySoundEvent{Name: hitSound})
+	case collision.MeshHitBlockEvent:
+		block := e.Block
+		at := geometry.Get.Point(gms.sprs[block.C][block.R])
+		if err := world.Signal(score.PointsEvent{Total: -2, At: at}); err != nil {
+			return err
+		}
+		gms.data[block.C][block.R] = clear
+		gms.sprs[block.C][block.R] = nil
+		return world.Signal(events.PlaySoundEvent{Name: hitSound})
 	}
 
 	return nil

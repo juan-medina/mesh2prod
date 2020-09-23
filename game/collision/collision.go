@@ -39,30 +39,35 @@ func (cs *collisionSystem) load(engine *gosge.Engine) error {
 	world := engine.World()
 
 	// add the bullet <-> block collision system
-	world.AddSystem(cs.bulletBlocksCollisionsSystem)
+	world.AddSystem(cs.blocksCollisionsSystem)
 	return nil
 }
 
-func (cs *collisionSystem) bulletBlocksCollisionsSystem(world *goecs.World, _ float32) error {
-
-	for itBu := world.Iterator(component.TYPE.Bullet, geometry.TYPE.Point, sprite.TYPE); itBu != nil; itBu = itBu.Next() {
-		bullet := itBu.Value()
-		block := cs.checkBlocks(bullet, world)
-		if block != nil {
-			blockC := component.Get.Block(block)
-			if err := world.Signal(BulletHitBlockEvent{Block: blockC}); err != nil {
-				return err
+func (cs *collisionSystem) blocksCollisionsSystem(world *goecs.World, _ float32) error {
+	for it := world.Iterator(geometry.TYPE.Point, sprite.TYPE); it != nil; it = it.Next() {
+		ent := it.Value()
+		if ent.Contains(component.TYPE.Bullet) {
+			block := cs.checkBlocks(ent, world)
+			if block != nil {
+				blockC := component.Get.Block(block)
+				if err := world.Signal(BulletHitBlockEvent{Block: blockC}); err != nil {
+					return err
+				}
+				_ = world.Remove(ent)
+				continue
 			}
-			_ = world.Remove(bullet)
-			continue
+		} else if ent.Contains(component.TYPE.Plane) {
+			cs.checkPlaneBlock(ent, world)
+		} else if ent.Contains(component.TYPE.Mesh) {
+			cs.checkMeshBlock(ent, world)
 		}
 	}
 
 	return nil
 }
 func (cs *collisionSystem) checkBlocks(bullet *goecs.Entity, world *goecs.World) *goecs.Entity {
-	for itBl := world.Iterator(component.TYPE.Block, geometry.TYPE.Point, sprite.TYPE); itBl != nil; itBl = itBl.Next() {
-		block := itBl.Value()
+	for it := world.Iterator(component.TYPE.Block, geometry.TYPE.Point, sprite.TYPE); it != nil; it = it.Next() {
+		block := it.Value()
 		if cs.spriteCollide(bullet, block) {
 			return block
 		}
@@ -80,8 +85,40 @@ func (cs *collisionSystem) spriteCollide(ent1, ent2 *goecs.Entity) bool {
 	return cs.eng.SpritesCollides(spr1, pos1, spr2, pos2)
 }
 
+func (cs *collisionSystem) checkPlaneBlock(plane *goecs.Entity, world *goecs.World) {
+	for it := world.Iterator(component.TYPE.Block, geometry.TYPE.Point, sprite.TYPE); it != nil; it = it.Next() {
+		block := it.Value()
+		if cs.spriteCollide(plane, block) {
+			blockC := component.Get.Block(block)
+			_ = world.Signal(PlaneHitBlockEvent{Block: blockC})
+			_ = world.Remove(block)
+		}
+	}
+}
+
+func (cs *collisionSystem) checkMeshBlock(mesh *goecs.Entity, world *goecs.World) {
+	for it := world.Iterator(component.TYPE.Block, geometry.TYPE.Point, sprite.TYPE); it != nil; it = it.Next() {
+		block := it.Value()
+		if cs.spriteCollide(mesh, block) {
+			blockC := component.Get.Block(block)
+			_ = world.Signal(MeshHitBlockEvent{Block: blockC})
+			_ = world.Remove(block)
+		}
+	}
+}
+
 // BulletHitBlockEvent is trigger when a bullet hit a block
 type BulletHitBlockEvent struct {
+	Block component.Block
+}
+
+// PlaneHitBlockEvent is trigger when the plane hit a block
+type PlaneHitBlockEvent struct {
+	Block component.Block
+}
+
+// MeshHitBlockEvent is trigger when the mesh hit a block
+type MeshHitBlockEvent struct {
 	Block component.Block
 }
 

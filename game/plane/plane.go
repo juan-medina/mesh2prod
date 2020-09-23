@@ -31,6 +31,7 @@ import (
 	"github.com/juan-medina/gosge/components/effects"
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/events"
+	"github.com/juan-medina/mesh2prod/game/component"
 	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
 )
@@ -104,6 +105,7 @@ func (ps *planeSystem) load(eng *gosge.Engine) error {
 			},
 		},
 		effects.Layer{Depth: 0},
+		component.Plane{},
 	)
 
 	// add the keys listener

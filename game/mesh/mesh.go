@@ -31,6 +31,7 @@ import (
 	"github.com/juan-medina/gosge/components/effects"
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/components/shapes"
+	"github.com/juan-medina/mesh2prod/game/component"
 	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
 	"github.com/juan-medina/mesh2prod/game/plane"
@@ -108,6 +109,7 @@ func (ms *meshSystem) load(eng *gosge.Engine) error {
 				Y: (ms.dr.Height - halveHeight) * ms.gs.Max,
 			},
 		},
+		component.Mesh{},
 		effects.Layer{Depth: 0},
 	)
 
