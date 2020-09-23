@@ -126,10 +126,15 @@ func (gms *targetSystem) addSprites(world *goecs.World) {
 			X: 0,
 			Y: 0,
 		},
-		color.Red.Alpha(127),
+		effects.AlternateColor{
+			From:  color.Red.Alpha(60),
+			To:    color.Red.Alpha(100),
+			Time:  0.35,
+			Delay: 0.35,
+		},
 		shapes.Line{
 			To:        geometry.Point{},
-			Thickness: 2,
+			Thickness: 1.5 * gms.gs.Max,
 		},
 		effects.Layer{Depth: 0},
 	)
