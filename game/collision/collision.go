@@ -25,8 +25,11 @@ package collision
 import (
 	"github.com/juan-medina/goecs"
 	"github.com/juan-medina/gosge"
+	"github.com/juan-medina/gosge/components/color"
+	"github.com/juan-medina/gosge/components/effects"
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/components/sprite"
+	"github.com/juan-medina/gosge/events"
 	"github.com/juan-medina/mesh2prod/game/component"
 )
 
@@ -40,6 +43,8 @@ func (cs *collisionSystem) load(engine *gosge.Engine) error {
 
 	// add the bullet <-> block collision system
 	world.AddSystem(cs.blocksCollisionsSystem)
+
+	world.AddListener(cs.removeTintsListener)
 	return nil
 }
 
@@ -57,9 +62,13 @@ func (cs *collisionSystem) blocksCollisionsSystem(world *goecs.World, _ float32)
 				continue
 			}
 		} else if ent.Contains(component.TYPE.Plane) {
-			cs.checkPlaneBlock(ent, world)
+			if cs.checkPlaneBlock(ent, world) {
+				cs.tintEntity(ent, world)
+			}
 		} else if ent.Contains(component.TYPE.Mesh) {
-			cs.checkMeshBlock(ent, world)
+			if cs.checkMeshBlock(ent, world) {
+				cs.tintEntity(ent, world)
+			}
 		}
 	}
 
@@ -85,22 +94,28 @@ func (cs *collisionSystem) spriteCollide(ent1, ent2 *goecs.Entity) bool {
 	return cs.eng.SpritesCollides(spr1, pos1, spr2, pos2)
 }
 
-func (cs *collisionSystem) checkPlaneBlock(plane *goecs.Entity, world *goecs.World) {
+func (cs *collisionSystem) checkPlaneBlock(plane *goecs.Entity, world *goecs.World) bool {
+	any := false
 	for it := world.Iterator(component.TYPE.Block, geometry.TYPE.Point, sprite.TYPE); it != nil; it = it.Next() {
 		block := it.Value()
 		if cs.spriteCollide(plane, block) {
+			any = true
 			cs.removeBlock(block, world, true)
 		}
 	}
+	return any
 }
 
-func (cs *collisionSystem) checkMeshBlock(mesh *goecs.Entity, world *goecs.World) {
+func (cs *collisionSystem) checkMeshBlock(mesh *goecs.Entity, world *goecs.World) bool {
+	any := false
 	for it := world.Iterator(component.TYPE.Block, geometry.TYPE.Point, sprite.TYPE); it != nil; it = it.Next() {
 		block := it.Value()
 		if cs.spriteCollide(mesh, block) {
+			any = true
 			cs.removeBlock(block, world, false)
 		}
 	}
+	return any
 }
 
 func (cs *collisionSystem) removeBlock(block *goecs.Entity, world *goecs.World, isPlane bool) {
@@ -119,6 +134,31 @@ func (cs *collisionSystem) removeBlock(block *goecs.Entity, world *goecs.World, 
 	}
 }
 
+func (cs *collisionSystem) tintEntity(ent *goecs.Entity, world *goecs.World) {
+	if ent.NotContains(effects.TYPE.AlternateColor) {
+		ent.Add(effects.AlternateColor{
+			From:  color.White,
+			To:    color.Red,
+			Time:  0.15,
+			Delay: 0,
+		})
+		_ = world.Signal(events.DelaySignal{
+			Signal: RemoveTintEvent{ent: ent},
+			Time:   1.5,
+		})
+	}
+}
+
+func (cs *collisionSystem) removeTintsListener(_ *goecs.World, signal interface{}, _ float32) error {
+	switch e := signal.(type) {
+	case RemoveTintEvent:
+		e.ent.Remove(effects.TYPE.AlternateColor)
+		e.ent.Remove(effects.TYPE.AlternateColorState)
+		e.ent.Set(color.White)
+	}
+	return nil
+}
+
 // BulletHitBlockEvent is trigger when a bullet hit a block
 type BulletHitBlockEvent struct {
 	Block component.Block
@@ -132,6 +172,11 @@ type PlaneHitBlockEvent struct {
 // MeshHitBlockEvent is trigger when the mesh hit a block
 type MeshHitBlockEvent struct {
 	Block component.Block
+}
+
+// RemoveTintEvent is a event to remove a tint
+type RemoveTintEvent struct {
+	ent *goecs.Entity
 }
 
 // System create the map system
