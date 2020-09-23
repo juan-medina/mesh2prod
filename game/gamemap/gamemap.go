@@ -417,12 +417,13 @@ func (gms *gameMapSystem) generate() {
 		piece9,
 	}
 
+	// we start on column 40
+	cc := int((gms.dr.Width * gms.gs.Point.X) / (gms.blockSize.Width * blockScale * gms.gs.Max))
+
 	// limits
 	limitR := gms.rows - 8
-	limitC := gms.cols - 8
+	limitC := cc + 300
 
-	// we start on column 4
-	cc := 6
 	for cc < limitC {
 		// random number of pieces
 		num := 2 + rand.Intn(6)
@@ -446,7 +447,7 @@ func (gms *gameMapSystem) generate() {
 
 // add sprite from map state
 func (gms *gameMapSystem) addSprites(world *goecs.World) {
-	offset := gms.dr.Width * gms.gs.Point.X
+	offset := float32(0)
 
 	// add a scroll marker
 	gms.scrollMarker = gms.addEntity(world, 0, 0, offset)
