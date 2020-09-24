@@ -35,6 +35,7 @@ import (
 	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
 	"github.com/juan-medina/mesh2prod/game/winning"
+	"math"
 )
 
 // PointsEvent is trigger when new points need to be added
@@ -189,16 +190,16 @@ func (ss *scoreSystem) pointsDisplaySystem(_ *goecs.World, delta float32) error 
 	}
 	// if we have points to add
 	if ss.toAdd > 0 {
-		// add just some of them per tick
-		adding := int(pointsToAddPerSec * delta)
+		// add just some of them per tick, without overflow
+		adding := int(math.Min(float64(pointsToAddPerSec*delta), float64(ss.toAdd)))
 		ss.toAdd -= adding
 		ss.total += adding
 	}
 
 	// if we have points to sub
 	if ss.toSub > 0 {
-		// add just some of them per tick
-		subbing := int(pointsToAddPerSec * delta)
+		// add just some of them per tick, without overflow
+		subbing := int(math.Min(float64(pointsToAddPerSec*delta), float64(ss.toSub)))
 		ss.toSub -= subbing
 		ss.total -= subbing
 	}
