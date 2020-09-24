@@ -30,6 +30,7 @@ import (
 	"github.com/juan-medina/gosge/components/color"
 	"github.com/juan-medina/gosge/components/effects"
 	"github.com/juan-medina/gosge/components/geometry"
+	"github.com/juan-medina/gosge/components/shapes"
 	"github.com/juan-medina/gosge/components/sprite"
 	"github.com/juan-medina/gosge/components/ui"
 	"github.com/juan-medina/gosge/events"
@@ -56,13 +57,15 @@ const (
 
 // logic constants
 const (
-	blockSpeed = 25                            // our block speed
-	boxSprite  = "box.png"                     // block sprite
-	blockScale = 0.5                           // block scale
-	popSound   = "resources/audio/pop.wav"     // block pop
-	hitSound   = "resources/audio/hit.wav"     // block hit
-	font       = "resources/fonts/go_mono.fnt" // our text font
-	fontSize   = 30                            // top text fon size
+	blockSpeed         = 25                               // our block speed
+	boxSprite          = "box.png"                        // block sprite
+	blockScale         = 0.5                              // block scale
+	popSound           = "resources/audio/pop.wav"        // block pop
+	hitSound           = "resources/audio/hit.wav"        // block hit
+	font               = "resources/fonts/go_mono.fnt"    // our text font
+	fontSize           = 30                               // top text fon size
+	fontProduction     = "resources/fonts/go_regular.fnt" // our production text font
+	fontProductionSize = 60                               // top production text fon size
 )
 
 type gameMapSystem struct {
@@ -75,6 +78,7 @@ type gameMapSystem struct {
 	blockSize    geometry.Size     // block size
 	scrollMarker *goecs.Entity     // track the scroll position
 	eng          *gosge.Engine     // the game engine
+	length       int               // our map length
 }
 
 var (
@@ -309,6 +313,11 @@ func (gms *gameMapSystem) load(eng *gosge.Engine) error {
 		return err
 	}
 
+	// pre-load production font
+	if err = eng.LoadFont(fontProduction); err != nil {
+		return err
+	}
+
 	// pop sound
 	if err = eng.LoadSound(popSound); err != nil {
 		return err
@@ -422,7 +431,7 @@ func (gms *gameMapSystem) generate() {
 
 	// limits
 	limitR := gms.rows - 8
-	limitC := cc + 300
+	limitC := cc + gms.length
 
 	for cc < limitC {
 		// random number of pieces
@@ -452,12 +461,18 @@ func (gms *gameMapSystem) addSprites(world *goecs.World) {
 	// add a scroll marker
 	gms.scrollMarker = gms.addEntity(world, 0, 0, offset)
 
+	lastC := 0
+
 	// for each column row
 	for c := 0; c < gms.cols; c++ {
 		for r := 0; r < gms.rows; r++ {
 			// if empty skip
 			if gms.data[c][r] == empty {
 				continue
+			}
+
+			if c > lastC {
+				lastC = c
 			}
 
 			// create a sprite
@@ -479,6 +494,56 @@ func (gms *gameMapSystem) addSprites(world *goecs.World) {
 			gms.sprs[c][r] = ent
 		}
 	}
+
+	textSize, _ := gms.eng.MeasureText(fontProduction, "Production", fontProductionSize)
+
+	// add the production
+	ent := gms.addEntity(world, lastC+5, gms.rows/2, offset)
+
+	prodSize := geometry.Size{
+		Width:  textSize.Width * 1.25 * gms.gs.Point.X,
+		Height: gms.dr.Height * 0.75,
+	}
+	pos := geometry.Get.Point(ent)
+
+	pos.Y = ((gms.dr.Height * gms.gs.Point.Y) - (prodSize.Height * gms.gs.Max)) * 0.5
+
+	ent.Set(pos)
+	ent.Add(shapes.SolidBox{
+		Size:  prodSize,
+		Scale: gms.gs.Max,
+	})
+	ent.Add(color.Gradient{
+		From:      color.DarkBlue.Alpha(90),
+		To:        color.SkyBlue.Alpha(70),
+		Direction: color.GradientVertical,
+	})
+	ent.Add(effects.Layer{Depth: 1.0})
+
+	ent = gms.addEntity(world, lastC+5, gms.rows/2, offset)
+
+	ent.Set(pos)
+	ent.Add(shapes.Box{
+		Size:      prodSize,
+		Scale:     gms.gs.Max,
+		Thickness: int32(2 * gms.gs.Max),
+	})
+	ent.Add(color.White)
+	ent.Add(effects.Layer{Depth: 1.0})
+
+	ent = gms.addEntity(world, lastC+5, gms.rows/2, offset)
+	pos.X += prodSize.Width * 0.5 * gms.gs.Max
+	ent.Set(pos)
+	ent.Add(ui.Text{
+		String:     "Production",
+		Size:       fontProductionSize * gms.gs.Max,
+		Font:       fontProduction,
+		VAlignment: ui.TopVAlignment,
+		HAlignment: ui.CenterHAlignment,
+	})
+	ent.Add(color.White)
+	ent.Add(effects.Layer{Depth: 1.0})
+	ent.Add(component.Production{})
 }
 
 // create a entity on that col and row, with movement
@@ -631,9 +696,10 @@ func (gms *gameMapSystem) clearSystem(world *goecs.World, delta float32) error {
 }
 
 // System create the map system
-func System(engine *gosge.Engine, gs geometry.Scale, dr geometry.Size) error {
-	gms := newGameMap(500, 34)
+func System(engine *gosge.Engine, gs geometry.Scale, dr geometry.Size, length int) error {
+	gms := newGameMap(length+100, 34)
 
+	gms.length = length
 	gms.gs = gs
 	gms.dr = dr
 	gms.eng = engine

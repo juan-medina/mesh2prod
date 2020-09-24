@@ -46,6 +46,9 @@ type Plane struct{}
 // Mesh is a component for the mesh
 type Mesh struct{}
 
+// Production is a component for the production area
+type Production struct{}
+
 type types struct {
 	// Bullet is the reflect.Type for component.Bullet
 	Bullet reflect.Type
@@ -57,15 +60,18 @@ type types struct {
 	Plane reflect.Type
 	// Mesh is the reflect.Type for component.Mesh
 	Mesh reflect.Type
+	// Production is the reflect.Type for component.Production
+	Production reflect.Type
 }
 
 // TYPE hold the reflect.Type for our components
 var TYPE = types{
-	Bullet:    reflect.TypeOf(Bullet{}),
-	Block:     reflect.TypeOf(Block{}),
-	FloatText: reflect.TypeOf(FloatText{}),
-	Plane:     reflect.TypeOf(Plane{}),
-	Mesh:      reflect.TypeOf(Mesh{}),
+	Bullet:     reflect.TypeOf(Bullet{}),
+	Block:      reflect.TypeOf(Block{}),
+	FloatText:  reflect.TypeOf(FloatText{}),
+	Plane:      reflect.TypeOf(Plane{}),
+	Mesh:       reflect.TypeOf(Mesh{}),
+	Production: reflect.TypeOf(Production{}),
 }
 
 type gets struct {
@@ -79,6 +85,8 @@ type gets struct {
 	Plane func(e *goecs.Entity) Plane
 	// Mesh gets a component.Mesh from a goecs.Entity
 	Mesh func(e *goecs.Entity) Mesh
+	// Production gets a component.Production from a goecs.Entity
+	Production func(e *goecs.Entity) Production
 }
 
 // Get a geometry component
@@ -103,5 +111,9 @@ var Get = gets{
 	// Mesh gets a component.Mesh from a goecs.Entity
 	Mesh: func(e *goecs.Entity) Mesh {
 		return e.Get(TYPE.Mesh).(Mesh)
+	},
+	// Production gets a component.Production from a goecs.Entity
+	Production: func(e *goecs.Entity) Production {
+		return e.Get(TYPE.Production).(Production)
 	},
 }

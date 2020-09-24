@@ -35,6 +35,7 @@ import (
 	"github.com/juan-medina/mesh2prod/game/plane"
 	"github.com/juan-medina/mesh2prod/game/score"
 	"github.com/juan-medina/mesh2prod/game/target"
+	"github.com/juan-medina/mesh2prod/game/winning"
 )
 
 const (
@@ -46,8 +47,8 @@ var (
 	designResolution = geometry.Size{Width: 1920, Height: 1080} // designResolution is how our game is designed
 )
 
-// Load the game
-func Load(eng *gosge.Engine) error {
+// Stage the game
+func Stage(eng *gosge.Engine) error {
 	var err error
 
 	// get the ECS world
@@ -92,7 +93,7 @@ func Load(eng *gosge.Engine) error {
 	}
 
 	// add the map
-	if err = gamemap.System(eng, gameScale, designResolution); err != nil {
+	if err = gamemap.System(eng, gameScale, designResolution, 300); err != nil {
 		return err
 	}
 
@@ -108,6 +109,11 @@ func Load(eng *gosge.Engine) error {
 
 	// add the score system
 	if err = score.System(eng, gameScale, designResolution); err != nil {
+		return err
+	}
+
+	// add the winning system
+	if err = winning.System(eng, gameScale, designResolution); err != nil {
 		return err
 	}
 

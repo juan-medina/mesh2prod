@@ -37,6 +37,7 @@ import (
 	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
 	"github.com/juan-medina/mesh2prod/game/plane"
+	"github.com/juan-medina/mesh2prod/game/winning"
 	"math"
 )
 
@@ -64,6 +65,7 @@ type targetSystem struct {
 	gunPos     geometry.Point // plane gun position
 	target     *goecs.Entity  // current target position
 	line       *goecs.Entity  // target line
+	end        bool
 }
 
 // load the system
@@ -94,6 +96,9 @@ func (gms *targetSystem) load(eng *gosge.Engine) error {
 
 	// listen to keys
 	world.AddListener(gms.keyListener)
+
+	// listen to level events
+	world.AddListener(gms.levelEvents)
 
 	return nil
 }
@@ -142,6 +147,9 @@ func (gms *targetSystem) addSprites(world *goecs.World) {
 
 // a system that target a block
 func (gms *targetSystem) findTargetSystem(world *goecs.World, _ float32) error {
+	if gms.end {
+		return nil
+	}
 	// get the line from
 	linePosFrom := geometry.Get.Point(gms.line)
 	linePosFrom.X = gms.gunPos.X
@@ -226,6 +234,9 @@ func (gms *targetSystem) findTargetSystem(world *goecs.World, _ float32) error {
 
 // if the plane change position
 func (gms *targetSystem) planeChanges(_ *goecs.World, signal interface{}, _ float32) error {
+	if gms.end {
+		return nil
+	}
 	switch e := signal.(type) {
 	case plane.PositionChangeEvent:
 		// store gun position
@@ -236,6 +247,9 @@ func (gms *targetSystem) planeChanges(_ *goecs.World, signal interface{}, _ floa
 
 // listen to keys
 func (gms *targetSystem) keyListener(world *goecs.World, signal interface{}, _ float32) error {
+	if gms.end {
+		return nil
+	}
 	switch e := signal.(type) {
 	// if we got a key up
 	case events.KeyUpEvent:
@@ -310,6 +324,17 @@ func (gms *targetSystem) bulletSystem(world *goecs.World, _ float32) error {
 			_ = world.Remove(bullet)
 		}
 	}
+	return nil
+}
+
+func (gms *targetSystem) levelEvents(world *goecs.World, signal interface{}, _ float32) error {
+	switch signal.(type) {
+	case winning.LevelEndEvent:
+		gms.end = true
+		_ = world.Remove(gms.line)
+		_ = world.Remove(gms.target)
+	}
+
 	return nil
 }
 

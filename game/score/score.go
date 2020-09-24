@@ -34,6 +34,7 @@ import (
 	"github.com/juan-medina/mesh2prod/game/component"
 	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
+	"github.com/juan-medina/mesh2prod/game/winning"
 )
 
 // PointsEvent is trigger when new points need to be added
@@ -67,6 +68,7 @@ type scoreSystem struct {
 	toAdd     int            // score to add
 	toSub     int            // score to sub
 	textLabel *goecs.Entity  // our text
+	end       bool
 }
 
 var (
@@ -141,10 +143,16 @@ func (ss *scoreSystem) load(eng *gosge.Engine) error {
 	// text fade system
 	world.AddSystem(ss.textFadeSystem)
 
+	// listen to level events
+	world.AddListener(ss.levelEvents)
+
 	return err
 }
 
 func (ss *scoreSystem) pointsListener(world *goecs.World, signal interface{}, _ float32) error {
+	if ss.end {
+		return nil
+	}
 	switch e := signal.(type) {
 	// we got points
 	case PointsEvent:
@@ -176,6 +184,9 @@ func (ss *scoreSystem) pointsListener(world *goecs.World, signal interface{}, _ 
 
 // update the points
 func (ss *scoreSystem) pointsDisplaySystem(_ *goecs.World, delta float32) error {
+	if ss.end {
+		return nil
+	}
 	// if we have points to add
 	if ss.toAdd > 0 {
 		// add just some of them per tick
@@ -188,7 +199,7 @@ func (ss *scoreSystem) pointsDisplaySystem(_ *goecs.World, delta float32) error 
 	if ss.toSub > 0 {
 		// add just some of them per tick
 		subbing := int(pointsToAddPerSec * delta)
-		ss.toAdd -= subbing
+		ss.toSub -= subbing
 		ss.total -= subbing
 	}
 
@@ -264,6 +275,27 @@ func (ss *scoreSystem) addFloatPoints(world *goecs.World, base, extra int, at ge
 		},
 		component.FloatText{},
 	)
+}
+
+func (ss *scoreSystem) levelEvents(world *goecs.World, signal interface{}, _ float32) error {
+	switch signal.(type) {
+	case winning.LevelEndEvent:
+		ss.end = true
+
+		ss.total += ss.toAdd
+		ss.total -= ss.toSub
+		ss.toAdd = 0
+		ss.toSub = 0
+		ss.lastScore = ss.total
+
+		text := ui.Get.Text(ss.textLabel)
+		text.String = fmt.Sprintf("%d", ss.lastScore)
+
+		ss.textLabel.Set(text)
+		return world.Signal(winning.FinalScoreEvent{Total: ss.total})
+	}
+
+	return nil
 }
 
 // System create the score system

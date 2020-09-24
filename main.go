@@ -25,6 +25,7 @@ package main
 import (
 	"github.com/juan-medina/gosge"
 	"github.com/juan-medina/gosge/components/color"
+	"github.com/juan-medina/gosge/events"
 	"github.com/juan-medina/gosge/options"
 	"github.com/juan-medina/mesh2prod/game"
 	"github.com/rs/zerolog/log"
@@ -41,8 +42,13 @@ var opt = options.Options{
 	// Height:   1536,
 }
 
+func load(eng *gosge.Engine) error {
+	eng.AddGameStage("game", game.Stage)
+	return eng.World().Signal(events.ChangeGameStage{Stage: "game"})
+}
+
 func main() {
-	if err := gosge.Run(opt, game.Load); err != nil {
+	if err := gosge.Run(opt, load); err != nil {
 		log.Fatal().Err(err).Msg("error running the game")
 	}
 }

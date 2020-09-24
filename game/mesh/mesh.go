@@ -35,6 +35,7 @@ import (
 	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
 	"github.com/juan-medina/mesh2prod/game/plane"
+	"github.com/juan-medina/mesh2prod/game/winning"
 )
 
 const (
@@ -48,6 +49,7 @@ const (
 	joinShiftYTop    = 130          // shift Y for the top joint
 	joinShiftYBottom = 170          // shift Y for the bottom joint
 	lineThickness    = 5            // the line thickness
+	meshScrollSpeedX = 25           // mesh scroll x (match block scroll)
 )
 
 type meshSystem struct {
@@ -57,6 +59,7 @@ type meshSystem struct {
 	planePos geometry.Point
 	line     [2]*goecs.Entity
 	size     geometry.Size
+	end      bool
 }
 
 // add the background
@@ -121,7 +124,7 @@ func (ms *meshSystem) load(eng *gosge.Engine) error {
 				Thickness: lineThickness * ms.gs.Max,
 			},
 			geometry.Point{},
-			effects.Layer{Depth: 1},
+			effects.Layer{Depth: 0.5},
 			color.Gray,
 		)
 	}
@@ -132,11 +135,17 @@ func (ms *meshSystem) load(eng *gosge.Engine) error {
 	// listen to plane changes
 	world.AddListener(ms.planeChanges)
 
+	// listen to level events
+	world.AddListener(ms.levelEvents)
+
 	return nil
 }
 
 // follow system
 func (ms *meshSystem) followSystem(_ *goecs.World, delta float32) error {
+	if ms.end {
+		return nil
+	}
 	// get mesh component
 	meshPos := geometry.Get.Point(ms.mesh)
 	mov := ms.mesh.Get(movement.Type).(movement.Movement)
@@ -176,6 +185,9 @@ func (ms *meshSystem) followSystem(_ *goecs.World, delta float32) error {
 
 // when plane changes save it position
 func (ms *meshSystem) planeChanges(_ *goecs.World, signal interface{}, _ float32) error {
+	if ms.end {
+		return nil
+	}
 	switch e := signal.(type) {
 	case plane.PositionChangeEvent:
 		ms.planePos = e.Pos
@@ -185,10 +197,24 @@ func (ms *meshSystem) planeChanges(_ *goecs.World, signal interface{}, _ float32
 			line.To = e.Joint // we will use the joint position send by the plane
 			ms.line[ln].Set(line)
 		}
-		/*pos := geometry.Get.Point(ms.mesh)
-		pos.X = ms.planePos.X - (300 * ms.gs.Max)
-		ms.mesh.Set(pos)*/
 	}
+	return nil
+}
+
+func (ms *meshSystem) levelEvents(world *goecs.World, signal interface{}, _ float32) error {
+	switch signal.(type) {
+	case winning.LevelEndEvent:
+		ms.end = true
+		for ln := 0; ln < 2; ln++ {
+			_ = world.Remove(ms.line[ln])
+			ms.mesh.Set(movement.Movement{Amount: geometry.Point{
+				X: -meshScrollSpeedX * ms.gs.Max,
+				Y: 0,
+			}})
+			ms.mesh.Remove(movement.ConstrainType)
+		}
+	}
+
 	return nil
 }
 

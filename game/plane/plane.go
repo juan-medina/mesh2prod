@@ -34,6 +34,7 @@ import (
 	"github.com/juan-medina/mesh2prod/game/component"
 	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
+	"github.com/juan-medina/mesh2prod/game/winning"
 )
 
 const (
@@ -55,6 +56,7 @@ type planeSystem struct {
 	plane   *goecs.Entity
 	lastPos geometry.Point
 	size    geometry.Size
+	end     bool
 }
 
 // add the background
@@ -114,10 +116,16 @@ func (ps *planeSystem) load(eng *gosge.Engine) error {
 	// add system to notify the world of position changes
 	world.AddSystem(ps.notifyPositionChanges)
 
+	// listen to level events
+	world.AddListener(ps.levelEvents)
+
 	return nil
 }
 
-func (ps planeSystem) keyMoveListener(_ *goecs.World, signal interface{}, _ float32) error {
+func (ps *planeSystem) keyMoveListener(_ *goecs.World, signal interface{}, _ float32) error {
+	if ps.end {
+		return nil
+	}
 	switch e := signal.(type) {
 	// if we got a key event
 	case events.KeyDownEvent:
@@ -176,6 +184,15 @@ func (ps *planeSystem) notifyPositionChanges(world *goecs.World, _ float32) erro
 		}
 
 		return world.Signal(PositionChangeEvent{Pos: current, Joint: joint, Gun: gun})
+	}
+
+	return nil
+}
+
+func (ps *planeSystem) levelEvents(_ *goecs.World, signal interface{}, _ float32) error {
+	switch signal.(type) {
+	case winning.LevelEndEvent:
+		ps.end = true
 	}
 
 	return nil
