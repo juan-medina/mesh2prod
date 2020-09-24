@@ -35,11 +35,13 @@ import (
 const (
 	uiSheet           = "resources/sprites/ui.json"
 	gamerSprite       = "gamer.png"
+	logoSprite        = "logo.png"
 	clickSound        = "resources/audio/click.wav"      // button click sound
 	shadowExtraWidth  = 3                                // the x offset for the buttons shadow
 	shadowExtraHeight = 3                                // the y offset for the buttons shadow
 	font              = "resources/fonts/go_regular.fnt" // our message text font
 	fontSize          = 60                               // message text font size
+	logoScale         = 0.75                             // logo scale
 )
 
 // Stage the menu
@@ -114,6 +116,23 @@ func Stage(eng *gosge.Engine) error {
 		geometry.Point{
 			X: dr.Width * gs.Max * 0.5,
 			Y: dr.Height * gs.Max * 0.5,
+		},
+	)
+
+	var size geometry.Size
+	if size, err = eng.GetSpriteSize(uiSheet, logoSprite); err != nil {
+		return err
+	}
+
+	world.AddEntity(
+		sprite.Sprite{
+			Sheet: uiSheet,
+			Name:  logoSprite,
+			Scale: gs.Max * logoScale,
+		},
+		geometry.Point{
+			X: dr.Width * gs.Max * 0.5,
+			Y: size.Height * gs.Max * 0.5 * logoScale,
 		},
 	)
 
