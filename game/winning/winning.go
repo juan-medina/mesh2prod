@@ -27,6 +27,7 @@ import (
 	"github.com/juan-medina/goecs"
 	"github.com/juan-medina/gosge"
 	"github.com/juan-medina/gosge/components/color"
+	"github.com/juan-medina/gosge/components/device"
 	"github.com/juan-medina/gosge/components/effects"
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/components/shapes"
@@ -44,6 +45,9 @@ const (
 	shadowExtraHeight = 3                                // the y offset for the buttons shadow
 	buttonExtraWidth  = 0.15                             // the additional width for a button si it is not only the text size
 	buttonExtraHeight = 0.15                             // the additional width for a button si it is not only the text size
+	clickSound        = "resources/audio/click.wav"      // button click sound
+	winSound          = "resources/audio/win.wav"        // win sound
+	music             = "resources/music/loop.ogg"       // our game music
 )
 
 // FinalScoreEvent is trigger when the game ends
@@ -75,13 +79,27 @@ func (ws *winningSystem) load(eng *gosge.Engine) error {
 		return err
 	}
 
+	// pre-load click sound
+	if err = eng.LoadSound(clickSound); err != nil {
+		return err
+	}
+
+	// pre-load win sound
+	if err = eng.LoadSound(winSound); err != nil {
+		return err
+	}
+
 	// get the ECS world
 	world := eng.World()
 
 	// calculate when we reach production
 	world.AddSystem(ws.reachProductionSystem)
 
+	// update score system
 	world.AddListener(ws.updateScoreSystem)
+
+	// listen to keys
+	world.AddListener(ws.KeysListener)
 
 	return nil
 }
@@ -100,7 +118,7 @@ func (ws *winningSystem) reachProductionSystem(world *goecs.World, _ float32) er
 	if diffX < 0 {
 		ws.end = true
 		_ = world.Signal(LevelEndEvent{})
-		return ws.addMessage(world)
+		_ = world.Signal(events.StopMusicEvent{Name: music})
 	}
 
 	return nil
@@ -195,8 +213,9 @@ func (ws *winningSystem) addMessage(world *goecs.World) error {
 			Shadow: geometry.Size{Width: shadowExtraWidth * ws.gs.Max, Height: shadowExtraHeight * ws.gs.Max},
 			Event: events.DelaySignal{
 				Signal: events.ChangeGameStage{Stage: "game"},
-				Time:   0.15,
+				Time:   0.25,
 			},
+			Sound: clickSound,
 		},
 		buttonPos,
 		shapes.SolidBox{
@@ -222,12 +241,35 @@ func (ws *winningSystem) addMessage(world *goecs.World) error {
 	return nil
 }
 
-func (ws *winningSystem) updateScoreSystem(_ *goecs.World, signal interface{}, _ float32) error {
+func (ws *winningSystem) updateScoreSystem(world *goecs.World, signal interface{}, _ float32) error {
 	switch e := signal.(type) {
 	case FinalScoreEvent:
+		if err := ws.addMessage(world); err != nil {
+			return err
+		}
 		text := ui.Get.Text(ws.label)
 		text.String = fmt.Sprintf("You got %d BlockCoins", e.Total)
 		ws.label.Set(text)
+		return world.Signal(events.PlaySoundEvent{Name: winSound})
+	}
+	return nil
+}
+
+func (ws *winningSystem) KeysListener(world *goecs.World, signal interface{}, _ float32) error {
+	if !ws.end {
+		return nil
+	}
+	switch e := signal.(type) {
+	case events.KeyUpEvent:
+		if e.Key == device.KeySpace {
+			_ = world.Signal(events.PlaySoundEvent{
+				Name: clickSound,
+			})
+			return world.Signal(events.DelaySignal{
+				Signal: events.ChangeGameStage{Stage: "game"},
+				Time:   0.25,
+			})
+		}
 	}
 	return nil
 }
