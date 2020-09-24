@@ -63,11 +63,13 @@ var (
 type LevelEndEvent struct{}
 
 type winningSystem struct {
-	gs    geometry.Scale
-	dr    geometry.Size
-	eng   *gosge.Engine
-	end   bool
-	label *goecs.Entity
+	gs       geometry.Scale
+	dr       geometry.Size
+	eng      *gosge.Engine
+	end      bool
+	label    *goecs.Entity
+	sprint   *goecs.Entity
+	distance float32
 }
 
 // add the background
@@ -92,11 +94,31 @@ func (ws *winningSystem) load(eng *gosge.Engine) error {
 	// get the ECS world
 	world := eng.World()
 
+	sprintPos := geometry.Point{
+		X: 5 * ws.gs.Max,
+		Y: 5 * ws.gs.Max,
+	}
+
+	ws.sprint = world.AddEntity(
+		ui.Text{
+			String:     "Sprinting Points to prod : 0",
+			Size:       fontSmall * ws.gs.Max,
+			Font:       font,
+			VAlignment: ui.TopVAlignment,
+			HAlignment: ui.LeftHAlignment,
+		},
+		sprintPos,
+		color.White,
+	)
+
 	// calculate when we reach production
 	world.AddSystem(ws.reachProductionSystem)
 
-	// update score system
-	world.AddListener(ws.updateScoreSystem)
+	// final score listener
+	world.AddListener(ws.finalScoreListener)
+
+	// update sprint system
+	world.AddSystem(ws.updateSprintSystem)
 
 	// listen to keys
 	world.AddListener(ws.KeysListener)
@@ -241,7 +263,7 @@ func (ws *winningSystem) addMessage(world *goecs.World) error {
 	return nil
 }
 
-func (ws *winningSystem) updateScoreSystem(world *goecs.World, signal interface{}, _ float32) error {
+func (ws *winningSystem) finalScoreListener(world *goecs.World, signal interface{}, _ float32) error {
 	switch e := signal.(type) {
 	case FinalScoreEvent:
 		if err := ws.addMessage(world); err != nil {
@@ -271,6 +293,35 @@ func (ws *winningSystem) KeysListener(world *goecs.World, signal interface{}, _ 
 			})
 		}
 	}
+	return nil
+}
+
+func (ws *winningSystem) updateSprintSystem(world *goecs.World, _ float32) error {
+	if ws.end {
+		return nil
+	}
+
+	mesh := world.Iterator(component.TYPE.Mesh).Value()
+	prod := world.Iterator(component.TYPE.Production).Value()
+
+	meshPos := geometry.Get.Point(mesh)
+	prodPos := geometry.Get.Point(prod)
+
+	diff := prodPos.X - meshPos.X
+
+	if ws.distance == 0 {
+		ws.distance = diff
+	}
+
+	percent := diff / ws.distance
+
+	sprints := int(percent * 1024)
+
+	text := ui.Get.Text(ws.sprint)
+
+	text.String = fmt.Sprintf("Sprinting Points to prod : %d", sprints)
+	ws.sprint.Set(text)
+
 	return nil
 }
 
