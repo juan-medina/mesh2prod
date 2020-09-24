@@ -217,7 +217,7 @@ func (ws *winningSystem) addMessage(world *goecs.World) error {
 	// measuring the biggest text for size all the buttons equally
 	var measure geometry.Size
 	var err error
-	if measure, err = ws.eng.MeasureText(font, "Yay !", fontButtonSize*ws.gs.Max); err != nil {
+	if measure, err = ws.eng.MeasureText(font, " Yay ! ", fontButtonSize); err != nil {
 		return err
 	}
 
@@ -234,7 +234,7 @@ func (ws *winningSystem) addMessage(world *goecs.World) error {
 		ui.FlatButton{
 			Shadow: geometry.Size{Width: shadowExtraWidth * ws.gs.Max, Height: shadowExtraHeight * ws.gs.Max},
 			Event: events.DelaySignal{
-				Signal: events.ChangeGameStage{Stage: "game"},
+				Signal: events.ChangeGameStage{Stage: "menu"},
 				Time:   0.25,
 			},
 			Sound: clickSound,

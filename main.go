@@ -28,6 +28,7 @@ import (
 	"github.com/juan-medina/gosge/events"
 	"github.com/juan-medina/gosge/options"
 	"github.com/juan-medina/mesh2prod/game"
+	"github.com/juan-medina/mesh2prod/menu"
 	"github.com/rs/zerolog/log"
 )
 
@@ -44,7 +45,8 @@ var opt = options.Options{
 
 func load(eng *gosge.Engine) error {
 	eng.AddGameStage("game", game.Stage)
-	return eng.World().Signal(events.ChangeGameStage{Stage: "game"})
+	eng.AddGameStage("menu", menu.Stage)
+	return eng.World().Signal(events.ChangeGameStage{Stage: "menu"})
 }
 
 func main() {
