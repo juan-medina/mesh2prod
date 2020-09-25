@@ -312,7 +312,7 @@ func (gms targetSystem) createBullet(world *goecs.World) {
 			component.Bullet{},
 			effects.Layer{Depth: 0},
 		)
-		_ = world.Signal(events.PlaySoundEvent{Name: shotSound})
+		_ = world.Signal(events.PlaySoundEvent{Name: shotSound, Volume: 1})
 	}
 }
 

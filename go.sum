@@ -8,8 +8,8 @@ github.com/gen2brain/raylib-go v0.0.0-20200905153824-5b0944b5567a h1:akS5kJf8OfF
 github.com/gen2brain/raylib-go v0.0.0-20200905153824-5b0944b5567a/go.mod h1:LUVRDQbnxUaOgzLzW5lMS+IcbqlXHIqIA9wq8wxzmcA=
 github.com/juan-medina/goecs v1.3.1 h1:jcJzkLl3w/1a6HQIviM3iC0E+sgADyKBTvY4DzHRn7I=
 github.com/juan-medina/goecs v1.3.1/go.mod h1:9NCnf8upBiDiF/a7Sjk42V8irmRlr7DOMQFObn8agHU=
-github.com/juan-medina/gosge v0.1.8 h1:OF6E3lhX8IVd0r7KkN9VU+yA7DG7qtUMobs4P2P6CDs=
-github.com/juan-medina/gosge v0.1.8/go.mod h1:L9TGMtWD8x+1uPApY9C0vPEvVir28y/GJ8Z+JVrGMvU=
+github.com/juan-medina/gosge v0.1.9 h1:+bYqjkSnIPUj1oTbVyATOrGLV9vY9tvpZ88jdrS+7d0=
+github.com/juan-medina/gosge v0.1.9/go.mod h1:gd9jzcuJTlMWI8TfVDaXKPlBe9SPrsOU2zV/zdtEgpg=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
@@ -22,8 +22,6 @@ github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINE
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/rs/xid v1.2.1/go.mod h1:+uKXf+4Djp6Md1KODXJxgGQPKngRmWyn10oCKFzNHOQ=
-github.com/rs/zerolog v1.19.0 h1:hYz4ZVdUgjXTBUmrkrw55j1nHx68LfOKIQk5IYtyScg=
-github.com/rs/zerolog v1.19.0/go.mod h1:IzD0RJ65iWH0w97OQQebJEvTZYvsCUm9WVLWBQrJRjo=
 github.com/rs/zerolog v1.20.0 h1:38k9hgtUBdxFwE34yS8rTHmHBa4eN16E4DJlv177LNs=
 github.com/rs/zerolog v1.20.0/go.mod h1:IzD0RJ65iWH0w97OQQebJEvTZYvsCUm9WVLWBQrJRjo=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

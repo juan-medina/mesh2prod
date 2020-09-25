@@ -606,7 +606,7 @@ func (gms *gameMapSystem) collisionListener(world *goecs.World, signal interface
 			})
 			gms.sprs[c][r] = nb
 			gms.place(c, r)
-			return world.Signal(events.PlaySoundEvent{Name: hitSound})
+			return world.Signal(events.PlaySoundEvent{Name: hitSound, Volume: 1})
 		}
 	case collision.PlaneHitBlockEvent:
 		block := e.Block
@@ -616,7 +616,7 @@ func (gms *gameMapSystem) collisionListener(world *goecs.World, signal interface
 		}
 		gms.data[block.C][block.R] = clear
 		gms.sprs[block.C][block.R] = nil
-		return world.Signal(events.PlaySoundEvent{Name: hitSound})
+		return world.Signal(events.PlaySoundEvent{Name: hitSound, Volume: 1})
 	case collision.MeshHitBlockEvent:
 		block := e.Block
 		at := geometry.Get.Point(gms.sprs[block.C][block.R])
@@ -625,7 +625,7 @@ func (gms *gameMapSystem) collisionListener(world *goecs.World, signal interface
 		}
 		gms.data[block.C][block.R] = clear
 		gms.sprs[block.C][block.R] = nil
-		return world.Signal(events.PlaySoundEvent{Name: hitSound})
+		return world.Signal(events.PlaySoundEvent{Name: hitSound, Volume: 1})
 	}
 
 	return nil
@@ -687,7 +687,7 @@ func (gms *gameMapSystem) clearSystem(world *goecs.World, delta float32) error {
 		}
 
 		// play pop sound
-		if err = world.Signal(events.PlaySoundEvent{Name: popSound}); err != nil {
+		if err = world.Signal(events.PlaySoundEvent{Name: popSound, Volume: 1}); err != nil {
 			return err
 		}
 	}

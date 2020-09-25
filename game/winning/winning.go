@@ -44,7 +44,7 @@ const (
 	shadowExtraWidth  = 3                                // the x offset for the buttons shadow
 	shadowExtraHeight = 3                                // the y offset for the buttons shadow
 	buttonExtraWidth  = 0.15                             // the additional width for a button si it is not only the text size
-	buttonExtraHeight = 0.15                             // the additional width for a button si it is not only the text size
+	buttonExtraHeight = 0.20                             // the additional width for a button si it is not only the text size
 	clickSound        = "resources/audio/click.wav"      // button click sound
 	winSound          = "resources/audio/win.wav"        // win sound
 	music             = "resources/music/loop.ogg"       // our game music
@@ -237,15 +237,17 @@ func (ws *winningSystem) addMessage(world *goecs.World) error {
 				Signal: events.ChangeGameStage{Stage: "menu"},
 				Time:   0.25,
 			},
-			Sound: clickSound,
+			Sound:  clickSound,
+			Volume: 1,
 		},
 		buttonPos,
-		shapes.SolidBox{
+		shapes.Box{
 			Size: geometry.Size{
 				Width:  measure.Width,
 				Height: measure.Height,
 			},
-			Scale: ws.gs.Max,
+			Scale:     ws.gs.Max,
+			Thickness: int32(2 * ws.gs.Max),
 		},
 		ui.Text{
 			String:     "Yay!",
@@ -254,9 +256,13 @@ func (ws *winningSystem) addMessage(world *goecs.World) error {
 			VAlignment: ui.MiddleVAlignment,
 			HAlignment: ui.CenterHAlignment,
 		},
-		color.Gradient{
-			From: color.Red,
-			To:   color.DarkPurple,
+		ui.ButtonColor{
+			Gradient: color.Gradient{
+				From: color.Red,
+				To:   color.DarkPurple,
+			},
+			Border: color.White,
+			Text:   color.SkyBlue,
 		},
 		effects.Layer{Depth: -2},
 	)
@@ -272,7 +278,7 @@ func (ws *winningSystem) finalScoreListener(world *goecs.World, signal interface
 		text := ui.Get.Text(ws.label)
 		text.String = fmt.Sprintf("You got %d BlockCoins", e.Total)
 		ws.label.Set(text)
-		return world.Signal(events.PlaySoundEvent{Name: winSound})
+		return world.Signal(events.PlaySoundEvent{Name: winSound, Volume: 1})
 	}
 	return nil
 }
@@ -284,9 +290,7 @@ func (ws *winningSystem) KeysListener(world *goecs.World, signal interface{}, _ 
 	switch e := signal.(type) {
 	case events.KeyUpEvent:
 		if e.Key == device.KeySpace {
-			_ = world.Signal(events.PlaySoundEvent{
-				Name: clickSound,
-			})
+			_ = world.Signal(events.PlaySoundEvent{Name: clickSound, Volume: 1})
 			return world.Signal(events.DelaySignal{
 				Signal: events.ChangeGameStage{Stage: "game"},
 				Time:   0.25,

@@ -42,6 +42,8 @@ const (
 	font              = "resources/fonts/go_regular.fnt" // our message text font
 	fontSize          = 60                               // message text font size
 	logoScale         = 0.75                             // logo scale
+	buttonExtraWidth  = 0.15                             // the additional width for a button si it is not only the text size
+	buttonExtraHeight = 0.20                             // the additional width for a button si it is not only the text size
 )
 
 // Stage the menu
@@ -142,6 +144,9 @@ func Stage(eng *gosge.Engine) error {
 		return err
 	}
 
+	measure.Width += measure.Width * buttonExtraWidth
+	measure.Height += measure.Height * buttonExtraHeight
+
 	buttonPos := geometry.Point{
 		X: (dr.Width * gs.Max * 0.5) - (measure.Width * gs.Max * 0.5),
 		Y: (dr.Height * gs.Max) - (measure.Height * gs.Max * 1.1),
@@ -155,15 +160,17 @@ func Stage(eng *gosge.Engine) error {
 				Signal: events.ChangeGameStage{Stage: "game"},
 				Time:   0.25,
 			},
-			Sound: clickSound,
+			Sound:  clickSound,
+			Volume: 1,
 		},
 		buttonPos,
-		shapes.SolidBox{
+		shapes.Box{
 			Size: geometry.Size{
 				Width:  measure.Width,
 				Height: measure.Height,
 			},
-			Scale: gs.Max,
+			Scale:     gs.Max,
+			Thickness: int32(2 * gs.Max),
 		},
 		ui.Text{
 			String:     "Play!",
@@ -172,9 +179,13 @@ func Stage(eng *gosge.Engine) error {
 			VAlignment: ui.MiddleVAlignment,
 			HAlignment: ui.CenterHAlignment,
 		},
-		color.Gradient{
-			From: color.Red,
-			To:   color.DarkPurple,
+		ui.ButtonColor{
+			Gradient: color.Gradient{
+				From: color.Red,
+				To:   color.DarkPurple,
+			},
+			Border: color.White,
+			Text:   color.SkyBlue,
 		},
 	)
 
