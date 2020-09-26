@@ -23,8 +23,10 @@
 package menu
 
 import (
+	"github.com/juan-medina/goecs"
 	"github.com/juan-medina/gosge"
 	"github.com/juan-medina/gosge/components/color"
+	"github.com/juan-medina/gosge/components/device"
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/components/shapes"
 	"github.com/juan-medina/gosge/components/sprite"
@@ -49,6 +51,8 @@ const (
 // Stage the menu
 func Stage(eng *gosge.Engine) error {
 	var err error
+
+	eng.SetExitKey(device.KeyEscape)
 
 	// load the sprite sheet
 	if err = eng.LoadSpriteSheet(uiSheet); err != nil {
@@ -189,5 +193,17 @@ func Stage(eng *gosge.Engine) error {
 		},
 	)
 
+	world.AddListener(menuKeyListener)
+	return nil
+}
+
+func menuKeyListener(world *goecs.World, signal interface{}, _ float32) error {
+	switch e := signal.(type) {
+	case events.KeyUpEvent:
+		if e.Key == device.KeyReturn || e.Key == device.KeySpace {
+			return world.Signal(events.ChangeGameStage{Stage: "game"})
+		}
+		break
+	}
 	return nil
 }

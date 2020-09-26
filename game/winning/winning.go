@@ -321,15 +321,21 @@ func (ws *winningSystem) finalScoreListener(world *goecs.World, signal interface
 }
 
 func (ws *winningSystem) KeysListener(world *goecs.World, signal interface{}, _ float32) error {
-	if !ws.end {
-		return nil
-	}
 	switch e := signal.(type) {
 	case events.KeyUpEvent:
-		if e.Key == device.KeySpace {
+		if e.Key == device.KeySpace || e.Key == device.KeyReturn {
+			if !ws.end {
+				return nil
+			}
 			_ = world.Signal(events.PlaySoundEvent{Name: clickSound, Volume: 1})
 			return world.Signal(events.DelaySignal{
 				Signal: events.ChangeGameStage{Stage: "game"},
+				Time:   0.25,
+			})
+		} else if e.Key == device.KeyEscape {
+			_ = world.Signal(events.PlaySoundEvent{Name: clickSound, Volume: 1})
+			return world.Signal(events.DelaySignal{
+				Signal: events.ChangeGameStage{Stage: "menu"},
 				Time:   0.25,
 			})
 		}

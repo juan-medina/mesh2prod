@@ -51,6 +51,8 @@ var (
 func Stage(eng *gosge.Engine) error {
 	var err error
 
+	eng.DisableExitKey()
+
 	// get the ECS world
 	world := eng.World()
 
