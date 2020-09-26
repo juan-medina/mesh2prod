@@ -42,7 +42,6 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type blocState int
@@ -305,7 +304,6 @@ func fromString(str string) *gameMapSystem {
 
 // load the system
 func (gms *gameMapSystem) load(eng *gosge.Engine) error {
-	rand.Seed(time.Now().UnixNano())
 	var err error
 
 	// pre-load font

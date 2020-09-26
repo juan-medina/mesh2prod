@@ -32,14 +32,16 @@ import (
 	"github.com/juan-medina/mesh2prod/game/gamemap"
 	"github.com/juan-medina/mesh2prod/game/mesh"
 	"github.com/juan-medina/mesh2prod/game/movement"
+	"github.com/juan-medina/mesh2prod/game/music"
 	"github.com/juan-medina/mesh2prod/game/plane"
 	"github.com/juan-medina/mesh2prod/game/score"
 	"github.com/juan-medina/mesh2prod/game/target"
 	"github.com/juan-medina/mesh2prod/game/winning"
+	"math/rand"
+	"time"
 )
 
 const (
-	music     = "resources/music/loop.ogg"  // our game music
 	planeLoop = "resources/audio/plane.ogg" // our plane loop
 )
 
@@ -50,7 +52,7 @@ var (
 // Stage the game
 func Stage(eng *gosge.Engine) error {
 	var err error
-
+	rand.Seed(time.Now().UnixNano())
 	eng.DisableExitKey()
 
 	// get the ECS world
@@ -59,8 +61,14 @@ func Stage(eng *gosge.Engine) error {
 	// gameScale from the real screen size to our design resolution
 	gameScale := eng.GetScreenSize().CalculateScale(designResolution)
 
+	// get random music
+	var musicFile string
+	if musicFile, err = music.GetRandomMusic(); err != nil {
+		return err
+	}
+
 	// load the music
-	if err = eng.LoadMusic(music); err != nil {
+	if err = eng.LoadMusic(musicFile); err != nil {
 		return err
 	}
 
@@ -120,7 +128,7 @@ func Stage(eng *gosge.Engine) error {
 	}
 
 	// play the music
-	if err = world.Signal(events.PlayMusicEvent{Name: music, Volume: 1}); err != nil {
+	if err = world.Signal(events.PlayMusicEvent{Name: musicFile, Volume: 1}); err != nil {
 		return err
 	}
 

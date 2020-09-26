@@ -46,6 +46,7 @@ const (
 	logoScale         = 0.75                             // logo scale
 	buttonExtraWidth  = 0.15                             // the additional width for a button si it is not only the text size
 	buttonExtraHeight = 0.20                             // the additional width for a button si it is not only the text size
+	music             = "resources/music/menu/Of Far Different Nature - Adventure Begins (CC-BY).ogg"
 )
 
 // Stage the menu
@@ -54,6 +55,10 @@ func Stage(eng *gosge.Engine) error {
 
 	eng.SetExitKey(device.KeyEscape)
 
+	// preload music
+	if err = eng.LoadMusic(music); err != nil {
+		return err
+	}
 	// load the sprite sheet
 	if err = eng.LoadSpriteSheet(uiSheet); err != nil {
 		return err
@@ -196,7 +201,7 @@ func Stage(eng *gosge.Engine) error {
 	)
 
 	world.AddListener(menuKeyListener)
-	return nil
+	return world.Signal(events.PlayMusicEvent{Name: music, Volume: 1})
 }
 
 func menuKeyListener(world *goecs.World, signal interface{}, _ float32) error {

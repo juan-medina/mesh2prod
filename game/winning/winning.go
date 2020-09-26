@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"github.com/juan-medina/goecs"
 	"github.com/juan-medina/gosge"
+	"github.com/juan-medina/gosge/components/audio"
 	"github.com/juan-medina/gosge/components/color"
 	"github.com/juan-medina/gosge/components/device"
 	"github.com/juan-medina/gosge/components/effects"
@@ -34,6 +35,7 @@ import (
 	"github.com/juan-medina/gosge/components/ui"
 	"github.com/juan-medina/gosge/events"
 	"github.com/juan-medina/mesh2prod/game/component"
+	"strings"
 )
 
 const (
@@ -47,7 +49,6 @@ const (
 	buttonExtraHeight = 0.20                             // the additional width for a button si it is not only the text size
 	clickSound        = "resources/audio/click.wav"      // button click sound
 	winSound          = "resources/audio/win.wav"        // win sound
-	music             = "resources/music/loop.ogg"       // our game music
 	barWidth          = 300
 	barHeight         = 40
 )
@@ -177,7 +178,15 @@ func (ws *winningSystem) reachProductionSystem(world *goecs.World, _ float32) er
 	if diffX < 0 {
 		ws.end = true
 		_ = world.Signal(LevelEndEvent{})
-		_ = world.Signal(events.StopMusicEvent{Name: music})
+		for it := world.Iterator(audio.TYPE.MusicState); it != nil; it = it.Next() {
+			val := it.Value()
+			sta := audio.Get.MusicState(val)
+			if sta.PlayingState == audio.StatePlaying {
+				if !strings.Contains(sta.Name, "plane") {
+					return world.Signal(events.StopMusicEvent{Name: sta.Name})
+				}
+			}
+		}
 	}
 
 	return nil
