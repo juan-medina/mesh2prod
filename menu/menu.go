@@ -113,6 +113,7 @@ func Stage(eng *gosge.Engine) error {
 		},
 	)
 
+	// gopher sprite
 	world.AddEntity(
 		sprite.Sprite{
 			Sheet: uiSheet,
@@ -120,8 +121,8 @@ func Stage(eng *gosge.Engine) error {
 			Scale: gs.Max,
 		},
 		geometry.Point{
-			X: dr.Width * gs.Max * 0.5,
-			Y: dr.Height * gs.Max * 0.5,
+			X: dr.Width * gs.Point.X * 0.5,
+			Y: dr.Height * gs.Point.Y * 0.5,
 		},
 	)
 
@@ -130,6 +131,7 @@ func Stage(eng *gosge.Engine) error {
 		return err
 	}
 
+	// add logo
 	world.AddEntity(
 		sprite.Sprite{
 			Sheet: uiSheet,
@@ -137,8 +139,8 @@ func Stage(eng *gosge.Engine) error {
 			Scale: gs.Max * logoScale,
 		},
 		geometry.Point{
-			X: dr.Width * gs.Max * 0.5,
-			Y: size.Height * gs.Max * 0.5 * logoScale,
+			X: dr.Width * gs.Point.X * 0.5,
+			Y: size.Height * gs.Point.Y * 0.5 * logoScale,
 		},
 	)
 
@@ -152,8 +154,8 @@ func Stage(eng *gosge.Engine) error {
 	measure.Height += measure.Height * buttonExtraHeight
 
 	buttonPos := geometry.Point{
-		X: (dr.Width * gs.Max * 0.5) - (measure.Width * gs.Max * 0.5),
-		Y: (dr.Height * gs.Max) - (measure.Height * gs.Max * 1.1),
+		X: (dr.Width * gs.Point.X * 0.5) - (measure.Width * gs.Max * 0.5),
+		Y: (dr.Height * gs.Point.Y) - (measure.Height * gs.Max * 1.1),
 	}
 
 	// add the play button, it will sent a event to change to the main stage
