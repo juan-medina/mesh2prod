@@ -498,11 +498,11 @@ func (gms *gameMapSystem) addSprites(world *goecs.World) {
 	textSize, _ := gms.eng.MeasureText(fontProduction, "Production", fontProductionSize)
 
 	// add the production
-	ent := gms.addEntity(world, lastC+5, gms.rows/2, offset)
+	ent := gms.addEntity(world, lastC-10, gms.rows/2, offset)
 
 	prodSize := geometry.Size{
 		Width:  textSize.Width * 1.25 * gms.gs.Point.X,
-		Height: gms.dr.Height * 0.75,
+		Height: gms.dr.Height * 0.90,
 	}
 	pos := geometry.Get.Point(ent)
 

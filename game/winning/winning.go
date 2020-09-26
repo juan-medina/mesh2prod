@@ -48,6 +48,8 @@ const (
 	clickSound        = "resources/audio/click.wav"      // button click sound
 	winSound          = "resources/audio/win.wav"        // win sound
 	music             = "resources/music/loop.ogg"       // our game music
+	barWidth          = 300
+	barHeight         = 40
 )
 
 // FinalScoreEvent is trigger when the game ends
@@ -68,7 +70,7 @@ type winningSystem struct {
 	eng      *gosge.Engine
 	end      bool
 	label    *goecs.Entity
-	sprint   *goecs.Entity
+	prodBar  *goecs.Entity
 	distance float32
 }
 
@@ -94,21 +96,56 @@ func (ws *winningSystem) load(eng *gosge.Engine) error {
 	// get the ECS world
 	world := eng.World()
 
-	sprintPos := geometry.Point{
+	pos := geometry.Point{
 		X: 5 * ws.gs.Max,
 		Y: 5 * ws.gs.Max,
 	}
 
-	ws.sprint = world.AddEntity(
+	ws.prodBar = world.AddEntity(
+		ui.ProgressBar{
+			Min:     0,
+			Max:     1,
+			Current: 0,
+			Shadow: geometry.Size{
+				Width:  5 * ws.gs.Max,
+				Height: 5 * ws.gs.Max,
+			},
+		},
+		pos,
+		shapes.Box{
+			Size: geometry.Size{
+				Width:  barWidth,
+				Height: barHeight,
+			},
+			Scale:     ws.gs.Max,
+			Thickness: int32(2 * ws.gs.Max),
+		},
+		ui.ProgressBarColor{
+			Gradient: color.Gradient{
+				From:      color.White,
+				To:        color.SkyBlue,
+				Direction: color.GradientHorizontal,
+			},
+			Border: color.DarkBlue,
+			Empty:  color.Blue,
+		},
+		effects.Layer{Depth: -100},
+	)
+
+	pos.X += barWidth * ws.gs.Max * 0.5
+	pos.Y += barHeight * ws.gs.Max * 0.5
+
+	world.AddEntity(
 		ui.Text{
-			String:     "Sprinting Points to prod : 0",
+			String:     "Production",
 			Size:       fontSmall * ws.gs.Max,
 			Font:       font,
-			VAlignment: ui.TopVAlignment,
-			HAlignment: ui.LeftHAlignment,
+			VAlignment: ui.MiddleVAlignment,
+			HAlignment: ui.CenterHAlignment,
 		},
-		sprintPos,
+		pos,
 		color.White,
+		effects.Layer{Depth: -100},
 	)
 
 	// calculate when we reach production
@@ -117,8 +154,8 @@ func (ws *winningSystem) load(eng *gosge.Engine) error {
 	// final score listener
 	world.AddListener(ws.finalScoreListener)
 
-	// update sprint system
-	world.AddSystem(ws.updateSprintSystem)
+	// update prod system
+	world.AddSystem(ws.updateProdBar)
 
 	// listen to keys
 	world.AddListener(ws.KeysListener)
@@ -300,7 +337,7 @@ func (ws *winningSystem) KeysListener(world *goecs.World, signal interface{}, _ 
 	return nil
 }
 
-func (ws *winningSystem) updateSprintSystem(world *goecs.World, _ float32) error {
+func (ws *winningSystem) updateProdBar(world *goecs.World, _ float32) error {
 	if ws.end {
 		return nil
 	}
@@ -317,14 +354,11 @@ func (ws *winningSystem) updateSprintSystem(world *goecs.World, _ float32) error
 		ws.distance = diff
 	}
 
-	percent := diff / ws.distance
+	percent := 1 - (diff / ws.distance)
 
-	sprints := int(percent * 1024)
-
-	text := ui.Get.Text(ws.sprint)
-
-	text.String = fmt.Sprintf("Sprinting Points to prod : %d", sprints)
-	ws.sprint.Set(text)
+	bar := ui.Get.ProgressBar(ws.prodBar)
+	bar.Current = percent
+	ws.prodBar.Set(bar)
 
 	return nil
 }
