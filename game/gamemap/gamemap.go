@@ -583,7 +583,7 @@ func (gms *gameMapSystem) collisionListener(world *goecs.World, signal interface
 		pos := geometry.Get.Point(gms.scrollMarker)
 		c := e.Block.C - 1
 		r := e.Block.R
-		if c > 0 {
+		if c >= 0 && c <= gms.cols && r >= 0 && r <= gms.rows {
 			x := pos.X - gms.blockSize.Width*0.5*blockScale*gms.gs.Max
 
 			// create a sprite
@@ -607,25 +607,25 @@ func (gms *gameMapSystem) collisionListener(world *goecs.World, signal interface
 			return world.Signal(events.PlaySoundEvent{Name: hitSound, Volume: 1})
 		}
 	case collision.PlaneHitBlockEvent:
-		block := e.Block
-		at := geometry.Get.Point(gms.sprs[block.C][block.R])
-		if err := world.Signal(score.PointsEvent{Total: -1, At: at}); err != nil {
-			return err
-		}
-		gms.data[block.C][block.R] = clear
-		gms.sprs[block.C][block.R] = nil
-		return world.Signal(events.PlaySoundEvent{Name: hitSound, Volume: 1})
+		return gms.clearBlock(e.Block, world)
 	case collision.MeshHitBlockEvent:
-		block := e.Block
-		at := geometry.Get.Point(gms.sprs[block.C][block.R])
-		if err := world.Signal(score.PointsEvent{Total: -2, At: at}); err != nil {
-			return err
-		}
-		gms.data[block.C][block.R] = clear
-		gms.sprs[block.C][block.R] = nil
-		return world.Signal(events.PlaySoundEvent{Name: hitSound, Volume: 1})
+		return gms.clearBlock(e.Block, world)
 	}
-
+	return nil
+}
+func (gms *gameMapSystem) clearBlock(block component.Block, world *goecs.World) error {
+	if block.C >= 0 && block.C <= gms.cols && block.R >= 0 && block.R <= gms.rows {
+		spr := gms.sprs[block.C][block.R]
+		if spr != nil {
+			at := geometry.Get.Point(spr)
+			if err := world.Signal(score.PointsEvent{Total: -1, At: at}); err != nil {
+				return err
+			}
+			gms.data[block.C][block.R] = clear
+			gms.sprs[block.C][block.R] = nil
+			return world.Signal(events.PlaySoundEvent{Name: hitSound, Volume: 1})
+		}
+	}
 	return nil
 }
 
