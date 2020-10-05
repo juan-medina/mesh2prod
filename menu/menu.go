@@ -84,6 +84,18 @@ func Stage(eng *gosge.Engine) error {
 	// get the ECS world
 	world := eng.World()
 
+	// create the background
+	createBackGround(world, dr, gs)
+
+	// create main menu
+	if err = createMainMenu(eng, world, dr, gs); err != nil {
+		return err
+	}
+
+	return world.Signal(events.PlayMusicEvent{Name: music, Volume: 1})
+}
+
+func createBackGround(world *goecs.World, dr geometry.Size, gs geometry.Scale) {
 	// add a gradient background
 	world.AddEntity(
 		shapes.SolidBox{
@@ -131,7 +143,10 @@ func Stage(eng *gosge.Engine) error {
 			Y: dr.Height * gs.Point.Y * 0.5,
 		},
 	)
+}
 
+func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs geometry.Scale) error {
+	var err error
 	var size geometry.Size
 	if size, err = eng.GetSpriteSize(uiSheet, logoSprite); err != nil {
 		return err
@@ -285,7 +300,8 @@ func Stage(eng *gosge.Engine) error {
 	)
 
 	world.AddListener(menuKeyListener)
-	return world.Signal(events.PlayMusicEvent{Name: music, Volume: 1})
+
+	return nil
 }
 
 func menuKeyListener(world *goecs.World, signal interface{}, _ float32) error {
