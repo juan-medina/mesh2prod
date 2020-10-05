@@ -113,6 +113,14 @@ func Stage(eng *gosge.Engine) error {
 
 	world.AddListener(changeMenuListener)
 
+	// set the master volume to it config value
+	currentMaster := eng.GetSettings().GetFloat32("master_volume", 1)
+
+	// set the master volume
+	if err = world.Signal(events.ChangeMasterVolumeEvent{Volume: currentMaster}); err != nil {
+		return err
+	}
+
 	return world.Signal(events.PlayMusicEvent{Name: music, Volume: 1})
 }
 
