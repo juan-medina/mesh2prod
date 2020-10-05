@@ -23,15 +23,18 @@
 package menu
 
 import (
+	"fmt"
 	"github.com/juan-medina/goecs"
 	"github.com/juan-medina/gosge"
 	"github.com/juan-medina/gosge/components/color"
 	"github.com/juan-medina/gosge/components/device"
+	"github.com/juan-medina/gosge/components/effects"
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/components/shapes"
 	"github.com/juan-medina/gosge/components/sprite"
 	"github.com/juan-medina/gosge/components/ui"
 	"github.com/juan-medina/gosge/events"
+	"reflect"
 )
 
 const (
@@ -47,14 +50,23 @@ const (
 	logoScale         = 0.75                             // logo scale
 	buttonExtraWidth  = 0.15                             // the additional width for a button si it is not only the text size
 	buttonExtraHeight = 0.20                             // the additional width for a button si it is not only the text size
+	mainMenu          = "main"                           // main menu
+	optionsMenu       = "options"                        // options menu
 	music             = "resources/music/menu/Of Far Different Nature - Adventure Begins (CC-BY).ogg"
+)
+
+var (
+	gEng        *gosge.Engine
+	barEnt      *goecs.Entity
+	valueLabel  *goecs.Entity
+	currentMenu = mainMenu
 )
 
 // Stage the menu
 func Stage(eng *gosge.Engine) error {
 	var err error
-
-	eng.SetExitKey(device.KeyEscape)
+	gEng = eng
+	eng.DisableExitKey()
 
 	// preload music
 	if err = eng.LoadMusic(music); err != nil {
@@ -85,17 +97,54 @@ func Stage(eng *gosge.Engine) error {
 	world := eng.World()
 
 	// create the background
-	createBackGround(world, dr, gs)
+	if err = createBackGround(eng, world, dr, gs); err != nil {
+		return err
+	}
 
 	// create main menu
 	if err = createMainMenu(eng, world, dr, gs); err != nil {
 		return err
 	}
 
+	// create options menu
+	if err = createOptionsMenu(eng, world, dr, gs); err != nil {
+		return err
+	}
+
+	world.AddListener(changeMenuListener)
+
 	return world.Signal(events.PlayMusicEvent{Name: music, Volume: 1})
 }
 
-func createBackGround(world *goecs.World, dr geometry.Size, gs geometry.Scale) {
+func changeMenuListener(world *goecs.World, signal interface{}, _ float32) error {
+	switch e := signal.(type) {
+	case changeMenuEvent:
+		currentMenu = e.name
+		for it := world.Iterator(menuType); it != nil; it = it.Next() {
+			ent := it.Value()
+			mn := ent.Get(menuType).(menu)
+			// show menu
+			if mn.name == e.name {
+				if ent.Contains(effects.TYPE.Hide) {
+					ent.Remove(effects.TYPE.Hide)
+				}
+			} else {
+				if ent.NotContains(effects.TYPE.Hide) {
+					ent.Add(effects.Hide{})
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func createBackGround(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs geometry.Scale) error {
+	var err error
+	var size geometry.Size
+	if size, err = eng.GetSpriteSize(uiSheet, logoSprite); err != nil {
+		return err
+	}
+
 	// add a gradient background
 	world.AddEntity(
 		shapes.SolidBox{
@@ -131,27 +180,6 @@ func createBackGround(world *goecs.World, dr geometry.Size, gs geometry.Scale) {
 		},
 	)
 
-	// gopher sprite
-	world.AddEntity(
-		sprite.Sprite{
-			Sheet: uiSheet,
-			Name:  gamerSprite,
-			Scale: gs.Max,
-		},
-		geometry.Point{
-			X: dr.Width * gs.Point.X * 0.5,
-			Y: dr.Height * gs.Point.Y * 0.5,
-		},
-	)
-}
-
-func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs geometry.Scale) error {
-	var err error
-	var size geometry.Size
-	if size, err = eng.GetSpriteSize(uiSheet, logoSprite); err != nil {
-		return err
-	}
-
 	// add logo
 	world.AddEntity(
 		sprite.Sprite{
@@ -164,6 +192,24 @@ func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 			Y: size.Height * gs.Point.Y * 0.5 * logoScale,
 		},
 	)
+
+	// gopher sprite
+	world.AddEntity(
+		sprite.Sprite{
+			Sheet: uiSheet,
+			Name:  gamerSprite,
+			Scale: gs.Max,
+		},
+		geometry.Point{
+			X: dr.Width * gs.Point.X * 0.5,
+			Y: dr.Height * gs.Point.Y * 0.5,
+		},
+	)
+	return nil
+}
+
+func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs geometry.Scale) error {
+	var err error
 
 	// measuring the biggest text for size all the buttons equally
 	var measure geometry.Size
@@ -214,6 +260,7 @@ func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 			Border: color.White,
 			Text:   color.SkyBlue,
 		},
+		menu{name: mainMenu},
 	)
 
 	smallSize := geometry.Size{
@@ -231,7 +278,7 @@ func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 		ui.FlatButton{
 			Shadow: geometry.Size{Width: shadowExtraWidth * gs.Max, Height: shadowExtraHeight * gs.Max},
 			Event: events.DelaySignal{
-				Signal: events.ChangeGameStage{Stage: "game"},
+				Signal: changeMenuEvent{name: optionsMenu},
 				Time:   0.25,
 			},
 			Sound:  clickSound,
@@ -258,6 +305,7 @@ func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 			Border: color.White,
 			Text:   color.SkyBlue,
 		},
+		menu{name: mainMenu},
 	)
 
 	buttonPos = geometry.Point{
@@ -297,6 +345,7 @@ func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 			Border: color.White,
 			Text:   color.SkyBlue,
 		},
+		menu{name: mainMenu},
 	)
 
 	world.AddListener(menuKeyListener)
@@ -304,13 +353,303 @@ func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 	return nil
 }
 
+func createOptionsMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs geometry.Scale) error {
+	currentMaster := float32(int(eng.GetSettings().GetFloat32("master_volume", 1) * 100))
+
+	panelSize := geometry.Size{
+		Width:  520,
+		Height: 210,
+	}
+
+	panelPos := geometry.Point{
+		X: (dr.Width * gs.Point.X * 0.5) - (panelSize.Width * gs.Max * 0.5),
+		Y: (dr.Height * gs.Point.Y * 0.5) - (panelSize.Height * gs.Max * 0.5),
+	}
+	world.AddEntity(
+		shapes.SolidBox{
+			Size:  panelSize,
+			Scale: gs.Max,
+		},
+		panelPos,
+		color.Black.Alpha(127),
+		menu{name: optionsMenu},
+		effects.Hide{},
+	)
+	world.AddEntity(
+		shapes.Box{
+			Size:      panelSize,
+			Scale:     gs.Max,
+			Thickness: int32(2 * gs.Max),
+		},
+		panelPos,
+		color.White,
+		menu{name: optionsMenu},
+		effects.Hide{},
+	)
+
+	labelPos := geometry.Point{
+		X: panelPos.X + (panelSize.Width * 0.5 * gs.Max),
+		Y: panelPos.Y + (40 * gs.Max),
+	}
+
+	world.AddEntity(
+		ui.Text{
+			String:     "Options",
+			Size:       fontBigSize * gs.Max,
+			Font:       font,
+			VAlignment: ui.MiddleVAlignment,
+			HAlignment: ui.CenterHAlignment,
+		},
+		labelPos,
+		color.White,
+		menu{name: optionsMenu},
+		effects.Hide{},
+	)
+
+	labelPos = geometry.Point{
+		X: panelPos.X + (10 * gs.Max),
+		Y: panelPos.Y + (90 * gs.Max),
+	}
+
+	world.AddEntity(
+		ui.Text{
+			String:     "Master Volume",
+			Size:       fontSmallSize * gs.Max,
+			Font:       font,
+			VAlignment: ui.TopVAlignment,
+			HAlignment: ui.LeftHAlignment,
+		},
+		labelPos,
+		color.White,
+		menu{name: optionsMenu},
+		effects.Hide{},
+	)
+
+	controlPos := geometry.Point{
+		X: labelPos.X + (200 * gs.Max),
+		Y: labelPos.Y,
+	}
+
+	controlSize := geometry.Size{
+		Width:  300,
+		Height: 40,
+	}
+
+	bar := ui.ProgressBar{
+		Min:     0,
+		Max:     100,
+		Current: currentMaster,
+		Shadow: geometry.Size{
+			Width:  2 * gs.Max,
+			Height: 2 * gs.Max,
+		},
+		Sound:  clickSound,
+		Volume: 1,
+		Event:  masterVolumeChangeEvent{},
+	}
+
+	// add the master volume progress bar
+	barEnt = world.AddEntity(
+		ui.ProgressBarColor{
+			Gradient: color.Gradient{
+				From:      color.Blue,
+				To:        color.SkyBlue,
+				Direction: color.GradientHorizontal,
+			},
+			Empty:  color.DarkBlue,
+			Border: color.White,
+		},
+		shapes.Box{
+			Size:      controlSize,
+			Scale:     gs.Max,
+			Thickness: int32(2 * gs.Max),
+		},
+		controlPos,
+		menu{name: optionsMenu},
+		effects.Hide{},
+	)
+
+	labelPos = geometry.Point{
+		X: controlPos.X + (controlSize.Width * 0.5 * gs.Max),
+		Y: controlPos.Y + (controlSize.Height * 0.5 * gs.Max),
+	}
+
+	text := "Muted"
+	if currentMaster != 0 {
+		text = fmt.Sprintf("%d%%", int(currentMaster))
+	}
+
+	valueLabel = world.AddEntity(
+		ui.Text{
+			String:     text,
+			Size:       fontSmallSize * gs.Max,
+			Font:       font,
+			VAlignment: ui.MiddleVAlignment,
+			HAlignment: ui.CenterHAlignment,
+		},
+		labelPos,
+		color.White,
+		menu{name: optionsMenu},
+		effects.Hide{},
+	)
+
+	barEnt.Set(bar)
+
+	controlSize = geometry.Size{
+		Width:  100,
+		Height: 40,
+	}
+
+	controlPos.X = panelPos.X + (panelSize.Width * 0.5 * gs.Max) - ((controlSize.Width + 20) * gs.Max)
+	controlPos.Y += 60 * gs.Max
+
+	// add the save button
+	world.AddEntity(
+		ui.FlatButton{
+			Shadow: geometry.Size{Width: shadowExtraWidth * gs.Max, Height: shadowExtraHeight * gs.Max},
+			Event:  saveOptionsEvent{},
+			Sound:  clickSound,
+			Volume: 1,
+		},
+		controlPos,
+		shapes.Box{
+			Size:      controlSize,
+			Scale:     gs.Max,
+			Thickness: int32(2 * gs.Max),
+		},
+		ui.Text{
+			String:     "Save",
+			Size:       fontSmallSize * gs.Max,
+			Font:       font,
+			VAlignment: ui.MiddleVAlignment,
+			HAlignment: ui.CenterHAlignment,
+		},
+		ui.ButtonColor{
+			Gradient: color.Gradient{
+				From: color.Red,
+				To:   color.DarkPurple,
+			},
+			Border: color.White,
+			Text:   color.SkyBlue,
+		},
+		menu{name: optionsMenu},
+		effects.Hide{},
+	)
+
+	controlPos.X = controlPos.X + ((controlSize.Width + 20) * gs.Max)
+
+	// add the cancel button
+	world.AddEntity(
+		ui.FlatButton{
+			Shadow: geometry.Size{Width: shadowExtraWidth * gs.Max, Height: shadowExtraHeight * gs.Max},
+			Event:  cancelOptionsEvent{},
+			Sound:  clickSound,
+			Volume: 1,
+		},
+		controlPos,
+		shapes.Box{
+			Size:      controlSize,
+			Scale:     gs.Max,
+			Thickness: int32(2 * gs.Max),
+		},
+		ui.Text{
+			String:     "Cancel",
+			Size:       fontSmallSize * gs.Max,
+			Font:       font,
+			VAlignment: ui.MiddleVAlignment,
+			HAlignment: ui.CenterHAlignment,
+		},
+		ui.ButtonColor{
+			Gradient: color.Gradient{
+				From: color.Red,
+				To:   color.DarkPurple,
+			},
+			Border: color.White,
+			Text:   color.SkyBlue,
+		},
+		menu{name: optionsMenu},
+		effects.Hide{},
+	)
+
+	world.AddListener(optionsListener)
+
+	return nil
+}
+
+func optionsListener(world *goecs.World, signal interface{}, _ float32) error {
+	switch signal.(type) {
+	case masterVolumeChangeEvent:
+		bar := ui.Get.ProgressBar(barEnt)
+		text := ui.Get.Text(valueLabel)
+		value := int(bar.Current)
+		if value != 0 {
+			text.String = fmt.Sprintf("%d%%", value)
+		} else {
+			text.String = "Muted"
+		}
+		valueLabel.Set(text)
+		return world.Signal(events.ChangeMasterVolumeEvent{Volume: float32(value) / 100})
+	case cancelOptionsEvent:
+		master := float32(int(gEng.GetSettings().GetFloat32("master_volume", 1) * 100))
+		bar := ui.Get.ProgressBar(barEnt)
+		bar.Current = master
+		barEnt.Set(bar)
+		text := ui.Get.Text(valueLabel)
+		text.String = fmt.Sprintf("%d%%", int32(master))
+		valueLabel.Set(text)
+		if err := world.Signal(events.ChangeMasterVolumeEvent{Volume: master / 100}); err != nil {
+			return err
+		}
+		return world.Signal(events.DelaySignal{
+			Signal: changeMenuEvent{name: mainMenu},
+			Time:   0.25,
+		})
+	case saveOptionsEvent:
+		bar := ui.Get.ProgressBar(barEnt)
+		value := bar.Current / 100
+		gEng.GetSettings().SetFloat32("master_volume", value)
+		return world.Signal(events.DelaySignal{
+			Signal: changeMenuEvent{name: mainMenu},
+			Time:   0.25,
+		})
+	}
+	return nil
+}
+
 func menuKeyListener(world *goecs.World, signal interface{}, _ float32) error {
 	switch e := signal.(type) {
 	case events.KeyUpEvent:
 		if e.Key == device.KeyReturn || e.Key == device.KeySpace {
-			return world.Signal(events.ChangeGameStage{Stage: "game"})
+			switch currentMenu {
+			case mainMenu:
+				return world.Signal(events.ChangeGameStage{Stage: "game"})
+			case optionsMenu:
+				return world.Signal(saveOptionsEvent{})
+			}
+		} else if e.Key == device.KeyEscape {
+			switch currentMenu {
+			case mainMenu:
+				return world.Signal(events.GameCloseEvent{})
+			case optionsMenu:
+				return world.Signal(cancelOptionsEvent{})
+			}
 		}
-		break
 	}
 	return nil
+}
+
+type masterVolumeChangeEvent struct{}
+
+type cancelOptionsEvent struct{}
+
+type saveOptionsEvent struct{}
+
+type menu struct {
+	name string
+}
+
+var menuType = reflect.TypeOf(menu{})
+
+type changeMenuEvent struct {
+	name string
 }
