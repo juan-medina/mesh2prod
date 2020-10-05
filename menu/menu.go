@@ -42,7 +42,8 @@ const (
 	shadowExtraWidth  = 3                                // the x offset for the buttons shadow
 	shadowExtraHeight = 3                                // the y offset for the buttons shadow
 	font              = "resources/fonts/go_regular.fnt" // our message text font
-	fontSize          = 60                               // message text font size
+	fontBigSize       = 60                               // big text font size
+	fontSmallSize     = 30                               // small text font size
 	logoScale         = 0.75                             // logo scale
 	buttonExtraWidth  = 0.15                             // the additional width for a button si it is not only the text size
 	buttonExtraHeight = 0.20                             // the additional width for a button si it is not only the text size
@@ -151,7 +152,7 @@ func Stage(eng *gosge.Engine) error {
 
 	// measuring the biggest text for size all the buttons equally
 	var measure geometry.Size
-	if measure, err = eng.MeasureText(font, " Play ! ", fontSize); err != nil {
+	if measure, err = eng.MeasureText(font, " Options ", fontBigSize); err != nil {
 		return err
 	}
 
@@ -160,7 +161,7 @@ func Stage(eng *gosge.Engine) error {
 
 	buttonPos := geometry.Point{
 		X: (dr.Width * gs.Point.X * 0.5) - (measure.Width * gs.Max * 0.5),
-		Y: (dr.Height * gs.Point.Y) - (measure.Height * gs.Max * 1.1),
+		Y: (dr.Height * gs.Point.Y) - (measure.Height * gs.Max * 2) - (20 * gs.Max),
 	}
 
 	// add the play button, it will sent a event to change to the main stage
@@ -185,7 +186,90 @@ func Stage(eng *gosge.Engine) error {
 		},
 		ui.Text{
 			String:     "Play!",
-			Size:       fontSize * gs.Max,
+			Size:       fontBigSize * gs.Max,
+			Font:       font,
+			VAlignment: ui.MiddleVAlignment,
+			HAlignment: ui.CenterHAlignment,
+		},
+		ui.ButtonColor{
+			Gradient: color.Gradient{
+				From: color.Red,
+				To:   color.DarkPurple,
+			},
+			Border: color.White,
+			Text:   color.SkyBlue,
+		},
+	)
+
+	smallSize := geometry.Size{
+		Width:  measure.Width * 0.48,
+		Height: measure.Height * 0.75,
+	}
+
+	buttonPos = geometry.Point{
+		X: (dr.Width * gs.Point.X * 0.5) - (measure.Width * 0.5 * gs.Max),
+		Y: (dr.Height * gs.Point.Y) - (measure.Height * gs.Max) - (10 * gs.Max),
+	}
+
+	// add the options button, it will sent a event to change to the main stage
+	world.AddEntity(
+		ui.FlatButton{
+			Shadow: geometry.Size{Width: shadowExtraWidth * gs.Max, Height: shadowExtraHeight * gs.Max},
+			Event: events.DelaySignal{
+				Signal: events.ChangeGameStage{Stage: "game"},
+				Time:   0.25,
+			},
+			Sound:  clickSound,
+			Volume: 1,
+		},
+		buttonPos,
+		shapes.Box{
+			Size:      smallSize,
+			Scale:     gs.Max,
+			Thickness: int32(2 * gs.Max),
+		},
+		ui.Text{
+			String:     "Options",
+			Size:       fontSmallSize * gs.Max,
+			Font:       font,
+			VAlignment: ui.MiddleVAlignment,
+			HAlignment: ui.CenterHAlignment,
+		},
+		ui.ButtonColor{
+			Gradient: color.Gradient{
+				From: color.Red,
+				To:   color.DarkPurple,
+			},
+			Border: color.White,
+			Text:   color.SkyBlue,
+		},
+	)
+
+	buttonPos = geometry.Point{
+		X: (dr.Width * gs.Point.X * 0.5) + (((measure.Width * 0.5) - smallSize.Width) * gs.Max),
+		Y: (dr.Height * gs.Point.Y) - (measure.Height * gs.Max) - (10 * gs.Max),
+	}
+
+	// add the exit button, it will sent a event to change to the main stage
+	world.AddEntity(
+		ui.FlatButton{
+			Shadow: geometry.Size{Width: shadowExtraWidth * gs.Max, Height: shadowExtraHeight * gs.Max},
+			Event: events.DelaySignal{
+				Signal: events.GameCloseEvent{},
+				Time:   0.25,
+			},
+			Sound:  clickSound,
+			Volume: 1,
+		},
+		buttonPos,
+		shapes.Box{
+			Size:      smallSize,
+			Scale:     gs.Max,
+			Thickness: int32(2 * gs.Max),
+		},
+		ui.Text{
+			String:     "Exit",
+			Size:       fontSmallSize * gs.Max,
 			Font:       font,
 			VAlignment: ui.MiddleVAlignment,
 			HAlignment: ui.CenterHAlignment,
