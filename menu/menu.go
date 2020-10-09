@@ -111,17 +111,17 @@ func Stage(eng *gosge.Engine) error {
 		return err
 	}
 
-	world.AddListener(changeMenuListener)
+	world.AddListener(changeMenuListener, changeMenuEventType)
 
 	// set the master volume to it config value
 	currentMaster := eng.GetSettings().GetFloat32("master_volume", 1)
 
 	// set the master volume
-	if err = world.Signal(events.ChangeMasterVolumeEvent{Volume: currentMaster}); err != nil {
-		return err
-	}
+	world.Signal(events.ChangeMasterVolumeEvent{Volume: currentMaster})
 
-	return world.Signal(events.PlayMusicEvent{Name: music, Volume: 1})
+	world.Signal(events.PlayMusicEvent{Name: music, Volume: 1})
+
+	return nil
 }
 
 func changeMenuListener(world *goecs.World, signal interface{}, _ float32) error {
@@ -356,7 +356,7 @@ func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 		menu{name: mainMenu},
 	)
 
-	world.AddListener(menuKeyListener)
+	world.AddListener(menuKeyListener, events.TYPE.KeyUpEvent)
 
 	return nil
 }
@@ -579,7 +579,7 @@ func createOptionsMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, 
 		effects.Hide{},
 	)
 
-	world.AddListener(optionsListener)
+	world.AddListener(optionsListener, masterVolumeChangeEventType, cancelOptionsEventType, saveOptionsEventType)
 
 	return nil
 }
@@ -596,7 +596,7 @@ func optionsListener(world *goecs.World, signal interface{}, _ float32) error {
 			text.String = "Muted"
 		}
 		valueLabel.Set(text)
-		return world.Signal(events.ChangeMasterVolumeEvent{Volume: float32(value) / 100})
+		world.Signal(events.ChangeMasterVolumeEvent{Volume: float32(value) / 100})
 	case cancelOptionsEvent:
 		master := float32(int(gEng.GetSettings().GetFloat32("master_volume", 1) * 100))
 		bar := ui.Get.ProgressBar(barEnt)
@@ -605,10 +605,8 @@ func optionsListener(world *goecs.World, signal interface{}, _ float32) error {
 		text := ui.Get.Text(valueLabel)
 		text.String = fmt.Sprintf("%d%%", int32(master))
 		valueLabel.Set(text)
-		if err := world.Signal(events.ChangeMasterVolumeEvent{Volume: master / 100}); err != nil {
-			return err
-		}
-		return world.Signal(events.DelaySignal{
+		world.Signal(events.ChangeMasterVolumeEvent{Volume: master / 100})
+		world.Signal(events.DelaySignal{
 			Signal: changeMenuEvent{name: mainMenu},
 			Time:   0.25,
 		})
@@ -616,7 +614,7 @@ func optionsListener(world *goecs.World, signal interface{}, _ float32) error {
 		bar := ui.Get.ProgressBar(barEnt)
 		value := bar.Current / 100
 		gEng.GetSettings().SetFloat32("master_volume", value)
-		return world.Signal(events.DelaySignal{
+		world.Signal(events.DelaySignal{
 			Signal: changeMenuEvent{name: mainMenu},
 			Time:   0.25,
 		})
@@ -630,16 +628,16 @@ func menuKeyListener(world *goecs.World, signal interface{}, _ float32) error {
 		if e.Key == device.KeyReturn || e.Key == device.KeySpace {
 			switch currentMenu {
 			case mainMenu:
-				return world.Signal(events.ChangeGameStage{Stage: "game"})
+				world.Signal(events.ChangeGameStage{Stage: "game"})
 			case optionsMenu:
-				return world.Signal(saveOptionsEvent{})
+				world.Signal(saveOptionsEvent{})
 			}
 		} else if e.Key == device.KeyEscape {
 			switch currentMenu {
 			case mainMenu:
-				return world.Signal(events.GameCloseEvent{})
+				world.Signal(events.GameCloseEvent{})
 			case optionsMenu:
-				return world.Signal(cancelOptionsEvent{})
+				world.Signal(cancelOptionsEvent{})
 			}
 		}
 	}
@@ -648,9 +646,15 @@ func menuKeyListener(world *goecs.World, signal interface{}, _ float32) error {
 
 type masterVolumeChangeEvent struct{}
 
+var masterVolumeChangeEventType = reflect.TypeOf(masterVolumeChangeEvent{})
+
 type cancelOptionsEvent struct{}
 
+var cancelOptionsEventType = reflect.TypeOf(cancelOptionsEvent{})
+
 type saveOptionsEvent struct{}
+
+var saveOptionsEventType = reflect.TypeOf(saveOptionsEvent{})
 
 type menu struct {
 	name string
@@ -661,3 +665,5 @@ var menuType = reflect.TypeOf(menu{})
 type changeMenuEvent struct {
 	name string
 }
+
+var changeMenuEventType = reflect.TypeOf(changeMenuEvent{})

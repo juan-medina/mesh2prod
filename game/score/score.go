@@ -36,6 +36,7 @@ import (
 	"github.com/juan-medina/mesh2prod/game/movement"
 	"github.com/juan-medina/mesh2prod/game/winning"
 	"math"
+	"reflect"
 )
 
 // PointsEvent is trigger when new points need to be added
@@ -43,6 +44,9 @@ type PointsEvent struct {
 	Total int
 	At    geometry.Point
 }
+
+// PointsEventType is the reflect.Type of PointsEvent
+var PointsEventType = reflect.TypeOf(PointsEvent{})
 
 // logic constants
 const (
@@ -139,13 +143,13 @@ func (ss *scoreSystem) load(eng *gosge.Engine) error {
 	world.AddSystem(ss.pointsDisplaySystem)
 
 	// listen to points
-	world.AddListener(ss.pointsListener)
+	world.AddListener(ss.pointsListener, PointsEventType)
 
 	// text fade system
 	world.AddSystem(ss.textFadeSystem)
 
 	// listen to level events
-	world.AddListener(ss.levelEvents)
+	world.AddListener(ss.levelEvents, winning.LevelEndEventType)
 
 	return err
 }
@@ -293,7 +297,7 @@ func (ss *scoreSystem) levelEvents(world *goecs.World, signal interface{}, _ flo
 		text.String = fmt.Sprintf("%d", ss.lastScore)
 
 		ss.textLabel.Set(text)
-		return world.Signal(winning.FinalScoreEvent{Total: ss.total})
+		world.Signal(winning.FinalScoreEvent{Total: ss.total})
 	}
 
 	return nil

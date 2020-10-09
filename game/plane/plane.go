@@ -35,6 +35,7 @@ import (
 	"github.com/juan-medina/mesh2prod/game/constants"
 	"github.com/juan-medina/mesh2prod/game/movement"
 	"github.com/juan-medina/mesh2prod/game/winning"
+	"reflect"
 )
 
 const (
@@ -111,13 +112,13 @@ func (ps *planeSystem) load(eng *gosge.Engine) error {
 	)
 
 	// add the keys listener
-	world.AddListener(ps.keyMoveListener)
+	world.AddListener(ps.keyMoveListener, events.TYPE.KeyUpEvent, events.TYPE.KeyDownEvent)
 
 	// add system to notify the world of position changes
 	world.AddSystem(ps.notifyPositionChanges)
 
 	// listen to level events
-	world.AddListener(ps.levelEvents)
+	world.AddListener(ps.levelEvents, winning.LevelEndEventType)
 
 	return nil
 }
@@ -183,7 +184,7 @@ func (ps *planeSystem) notifyPositionChanges(world *goecs.World, _ float32) erro
 			Y: current.Y + (gunShiftY * planeScale * ps.gs.Max),
 		}
 
-		return world.Signal(PositionChangeEvent{Pos: current, Joint: joint, Gun: gun})
+		world.Signal(PositionChangeEvent{Pos: current, Joint: joint, Gun: gun})
 	}
 
 	return nil
@@ -215,3 +216,6 @@ type PositionChangeEvent struct {
 	Joint geometry.Point // Joint is the joint point for our plane
 	Gun   geometry.Point // Gun is the gun point for our plane
 }
+
+// PositionChangeEventType is the reflect.Type of PositionChangeEvent
+var PositionChangeEventType = reflect.TypeOf(PositionChangeEvent{})

@@ -347,7 +347,7 @@ func (gms *gameMapSystem) load(eng *gosge.Engine) error {
 	world.AddSystem(gms.clearSystem)
 
 	// listen to collisions
-	world.AddListener(gms.collisionListener)
+	world.AddListener(gms.collisionListener, collision.BulletHitBlockEventType, collision.PlaneHitBlockEventType, collision.MeshHitBlockEventType)
 
 	return nil
 }
@@ -604,29 +604,26 @@ func (gms *gameMapSystem) collisionListener(world *goecs.World, signal interface
 			})
 			gms.sprs[c][r] = nb
 			gms.place(c, r)
-			return world.Signal(events.PlaySoundEvent{Name: hitSound, Volume: 1})
+			world.Signal(events.PlaySoundEvent{Name: hitSound, Volume: 1})
 		}
 	case collision.PlaneHitBlockEvent:
-		return gms.clearBlock(e.Block, world)
+		gms.clearBlock(e.Block, world)
 	case collision.MeshHitBlockEvent:
-		return gms.clearBlock(e.Block, world)
+		gms.clearBlock(e.Block, world)
 	}
 	return nil
 }
-func (gms *gameMapSystem) clearBlock(block component.Block, world *goecs.World) error {
+func (gms *gameMapSystem) clearBlock(block component.Block, world *goecs.World) {
 	if block.C >= 0 && block.C <= gms.cols && block.R >= 0 && block.R <= gms.rows {
 		spr := gms.sprs[block.C][block.R]
 		if spr != nil {
 			at := geometry.Get.Point(spr)
-			if err := world.Signal(score.PointsEvent{Total: -1, At: at}); err != nil {
-				return err
-			}
+			world.Signal(score.PointsEvent{Total: -1, At: at})
 			gms.data[block.C][block.R] = clear
 			gms.sprs[block.C][block.R] = nil
-			return world.Signal(events.PlaySoundEvent{Name: hitSound, Volume: 1})
+			world.Signal(events.PlaySoundEvent{Name: hitSound, Volume: 1})
 		}
 	}
-	return nil
 }
 
 func (gms *gameMapSystem) clearSystem(world *goecs.World, delta float32) error {
@@ -673,21 +670,16 @@ func (gms *gameMapSystem) clearSystem(world *goecs.World, delta float32) error {
 	}
 	// if we have clear any block
 	if total > 0 {
-		var err error
 		// the points are generate at the average of all blocks position
 		at := geometry.Point{
 			X: totalX / float32(total),
 			Y: totalY / float32(total),
 		}
 		// signal that we got points at a position
-		if err = world.Signal(score.PointsEvent{Total: total, At: at}); err != nil {
-			return err
-		}
+		world.Signal(score.PointsEvent{Total: total, At: at})
 
 		// play pop sound
-		if err = world.Signal(events.PlaySoundEvent{Name: popSound, Volume: 1}); err != nil {
-			return err
-		}
+		world.Signal(events.PlaySoundEvent{Name: popSound, Volume: 1})
 	}
 
 	return nil

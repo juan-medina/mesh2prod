@@ -46,7 +46,8 @@ var opt = options.Options{
 func load(eng *gosge.Engine) error {
 	eng.AddGameStage("game", game.Stage)
 	eng.AddGameStage("menu", menu.Stage)
-	return eng.World().Signal(events.ChangeGameStage{Stage: "menu"})
+	eng.World().Signal(events.ChangeGameStage{Stage: "menu"})
+	return nil
 }
 
 func main() {

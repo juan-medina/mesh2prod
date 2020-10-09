@@ -31,6 +31,7 @@ import (
 	"github.com/juan-medina/gosge/components/sprite"
 	"github.com/juan-medina/gosge/events"
 	"github.com/juan-medina/mesh2prod/game/component"
+	"reflect"
 )
 
 type collisionSystem struct {
@@ -44,7 +45,7 @@ func (cs *collisionSystem) load(engine *gosge.Engine) error {
 	// add the bullet <-> block collision system
 	world.AddSystem(cs.blocksCollisionsSystem)
 
-	world.AddListener(cs.removeTintsListener)
+	world.AddListener(cs.removeTintsListener, RemoveTintEventType)
 	return nil
 }
 
@@ -55,9 +56,7 @@ func (cs *collisionSystem) blocksCollisionsSystem(world *goecs.World, _ float32)
 			block := cs.checkBlocks(ent, world)
 			if block != nil {
 				blockC := component.Get.Block(block)
-				if err := world.Signal(BulletHitBlockEvent{Block: blockC}); err != nil {
-					return err
-				}
+				world.Signal(BulletHitBlockEvent{Block: blockC})
 				_ = world.Remove(ent)
 				continue
 			}
@@ -71,9 +70,9 @@ func (cs *collisionSystem) blocksCollisionsSystem(world *goecs.World, _ float32)
 			}
 		}
 	}
-
 	return nil
 }
+
 func (cs *collisionSystem) checkBlocks(bullet *goecs.Entity, world *goecs.World) *goecs.Entity {
 	for it := world.Iterator(component.TYPE.Block, geometry.TYPE.Point, sprite.TYPE); it != nil; it = it.Next() {
 		block := it.Value()
@@ -128,9 +127,9 @@ func (cs *collisionSystem) removeBlock(block *goecs.Entity, world *goecs.World, 
 
 	_ = world.Remove(block)
 	if isPlane {
-		_ = world.Signal(PlaneHitBlockEvent{Block: blockC})
+		world.Signal(PlaneHitBlockEvent{Block: blockC})
 	} else {
-		_ = world.Signal(MeshHitBlockEvent{Block: blockC})
+		world.Signal(MeshHitBlockEvent{Block: blockC})
 	}
 }
 
@@ -142,7 +141,7 @@ func (cs *collisionSystem) tintEntity(ent *goecs.Entity, world *goecs.World) {
 			Time:  0.15,
 			Delay: 0,
 		})
-		_ = world.Signal(events.DelaySignal{
+		world.Signal(events.DelaySignal{
 			Signal: RemoveTintEvent{ent: ent},
 			Time:   1.5,
 		})
@@ -164,20 +163,32 @@ type BulletHitBlockEvent struct {
 	Block component.Block
 }
 
+// BulletHitBlockEventType is the reflect.Type of BulletHitBlockEventType
+var BulletHitBlockEventType = reflect.TypeOf(BulletHitBlockEvent{})
+
 // PlaneHitBlockEvent is trigger when the plane hit a block
 type PlaneHitBlockEvent struct {
 	Block component.Block
 }
+
+// PlaneHitBlockEventType is the reflect.Type of PlaneHitBlockEvent
+var PlaneHitBlockEventType = reflect.TypeOf(PlaneHitBlockEvent{})
 
 // MeshHitBlockEvent is trigger when the mesh hit a block
 type MeshHitBlockEvent struct {
 	Block component.Block
 }
 
+// MeshHitBlockEventType is the reflect.Type of MeshHitBlockEvent
+var MeshHitBlockEventType = reflect.TypeOf(MeshHitBlockEvent{})
+
 // RemoveTintEvent is a event to remove a tint
 type RemoveTintEvent struct {
 	ent *goecs.Entity
 }
+
+// RemoveTintEventType is the reflect.Type of RemoveTintEvent
+var RemoveTintEventType = reflect.TypeOf(RemoveTintEvent{})
 
 // System create the map system
 func System(engine *gosge.Engine) error {

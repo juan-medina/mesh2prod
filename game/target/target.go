@@ -92,13 +92,13 @@ func (gms *targetSystem) load(eng *gosge.Engine) error {
 	world.AddSystem(gms.findTargetSystem)
 
 	// listen to plane changes
-	world.AddListener(gms.planeChanges)
+	world.AddListener(gms.planeChanges, plane.PositionChangeEventType)
 
 	// listen to keys
-	world.AddListener(gms.keyListener)
+	world.AddListener(gms.keyListener, events.TYPE.KeyUpEvent)
 
 	// listen to level events
-	world.AddListener(gms.levelEvents)
+	world.AddListener(gms.levelEvents, winning.LevelEndEventType)
 
 	return nil
 }
@@ -312,7 +312,7 @@ func (gms targetSystem) createBullet(world *goecs.World) {
 			component.Bullet{},
 			effects.Layer{Depth: 0},
 		)
-		_ = world.Signal(events.PlaySoundEvent{Name: shotSound, Volume: 1})
+		world.Signal(events.PlaySoundEvent{Name: shotSound, Volume: 1})
 	}
 }
 

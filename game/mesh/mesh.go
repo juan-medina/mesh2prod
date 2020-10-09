@@ -133,10 +133,10 @@ func (ms *meshSystem) load(eng *gosge.Engine) error {
 	world.AddSystem(ms.followSystem)
 
 	// listen to plane changes
-	world.AddListener(ms.planeChanges)
+	world.AddListener(ms.planeChanges, plane.PositionChangeEventType)
 
 	// listen to level events
-	world.AddListener(ms.levelEvents)
+	world.AddListener(ms.levelEvents, winning.LevelEndEventType)
 
 	return nil
 }

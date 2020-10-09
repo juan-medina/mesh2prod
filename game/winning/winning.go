@@ -35,6 +35,7 @@ import (
 	"github.com/juan-medina/gosge/components/ui"
 	"github.com/juan-medina/gosge/events"
 	"github.com/juan-medina/mesh2prod/game/component"
+	"reflect"
 	"strings"
 )
 
@@ -58,12 +59,18 @@ type FinalScoreEvent struct {
 	Total int
 }
 
+// FinalScoreEventType is the reflect.Type of FinalScoreEvent
+var FinalScoreEventType = reflect.TypeOf(FinalScoreEvent{})
+
 var (
 	bcColor = color.Solid{R: 227, G: 140, B: 41, A: 255} // our bc text color
 )
 
 // LevelEndEvent is trigger when the level end
 type LevelEndEvent struct{}
+
+// LevelEndEventType is the reflect.Type of LevelEndEvent
+var LevelEndEventType = reflect.TypeOf(LevelEndEvent{})
 
 type winningSystem struct {
 	gs       geometry.Scale
@@ -153,13 +160,13 @@ func (ws *winningSystem) load(eng *gosge.Engine) error {
 	world.AddSystem(ws.reachProductionSystem)
 
 	// final score listener
-	world.AddListener(ws.finalScoreListener)
+	world.AddListener(ws.finalScoreListener, FinalScoreEventType)
 
 	// update prod system
 	world.AddSystem(ws.updateProdBar)
 
 	// listen to keys
-	world.AddListener(ws.KeysListener)
+	world.AddListener(ws.KeysListener, events.TYPE.KeyUpEvent)
 
 	return nil
 }
@@ -177,13 +184,14 @@ func (ws *winningSystem) reachProductionSystem(world *goecs.World, _ float32) er
 	diffX := prodPos.X - meshPos.X
 	if diffX < 0 {
 		ws.end = true
-		_ = world.Signal(LevelEndEvent{})
+		world.Signal(LevelEndEvent{})
 		for it := world.Iterator(audio.TYPE.MusicState); it != nil; it = it.Next() {
 			val := it.Value()
 			sta := audio.Get.MusicState(val)
 			if sta.PlayingState == audio.StatePlaying {
 				if !strings.Contains(sta.Name, "plane") {
-					return world.Signal(events.StopMusicEvent{Name: sta.Name})
+					world.Signal(events.StopMusicEvent{Name: sta.Name})
+					break
 				}
 			}
 		}
@@ -324,7 +332,7 @@ func (ws *winningSystem) finalScoreListener(world *goecs.World, signal interface
 		text := ui.Get.Text(ws.label)
 		text.String = fmt.Sprintf("You got %d BlockCoins", e.Total)
 		ws.label.Set(text)
-		return world.Signal(events.PlaySoundEvent{Name: winSound, Volume: 1})
+		world.Signal(events.PlaySoundEvent{Name: winSound, Volume: 1})
 	}
 	return nil
 }
@@ -336,14 +344,14 @@ func (ws *winningSystem) KeysListener(world *goecs.World, signal interface{}, _ 
 			if !ws.end {
 				return nil
 			}
-			_ = world.Signal(events.PlaySoundEvent{Name: clickSound, Volume: 1})
-			return world.Signal(events.DelaySignal{
+			world.Signal(events.PlaySoundEvent{Name: clickSound, Volume: 1})
+			world.Signal(events.DelaySignal{
 				Signal: events.ChangeGameStage{Stage: "game"},
 				Time:   0.25,
 			})
 		} else if e.Key == device.KeyEscape {
-			_ = world.Signal(events.PlaySoundEvent{Name: clickSound, Volume: 1})
-			return world.Signal(events.DelaySignal{
+			world.Signal(events.PlaySoundEvent{Name: clickSound, Volume: 1})
+			world.Signal(events.DelaySignal{
 				Signal: events.ChangeGameStage{Stage: "menu"},
 				Time:   0.25,
 			})
