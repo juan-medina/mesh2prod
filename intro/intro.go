@@ -70,9 +70,10 @@ func Stage(eng *gosge.Engine) error {
 	// add the version
 	addVersion(world, dr, gs, eng.GetSettings().GetString("version", ""))
 
-	//world.Signal(events.DelaySignal{Signal: events.ChangeGameStage{Stage: "menu"}, Time: 5})
-
+	// add the fade system
 	world.AddSystem(fadeSystem)
+
+	// add the fade off listener
 	world.AddListener(fadeOffListener, fadeOffEventType)
 
 	return err
@@ -96,7 +97,7 @@ func fadeOffListener(world *goecs.World, signal interface{}, _ float32) error {
 }
 
 func fadeSystem(world *goecs.World, delta float32) error {
-	for it := world.Iterator(fadeToType, color.TYPE.Solid); it != nil; it = it.Next() {
+	for it := world.Iterator(fadeToType, color.TYPE.Solid, sprite.TYPE); it != nil; it = it.Next() {
 		ent := it.Value()
 		clr := color.Get.Solid(ent)
 		fad := ent.Get(fadeToType).(fadeTo)
