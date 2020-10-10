@@ -42,7 +42,7 @@ const (
 	gopherPlaneAnim = "gopher_plane_%d.png" // base animation for our gopher
 	planeScale      = float32(0.5)          // plane scale
 	planeX          = 400                   // plane X position
-	planeSpeed      = 320                   // plane speed
+	planeSpeed      = float32(320)          // plane speed
 	animSpeedSlow   = 0.65                  // animation slow speed
 	animSpeedFast   = 1                     // animation fast speed
 	joinShiftX      = 20                    // shift in X for the joint
@@ -114,6 +114,12 @@ func (ps *planeSystem) load(eng *gosge.Engine) error {
 	// add the keys listener
 	world.AddListener(ps.keyMoveListener, events.TYPE.KeyUpEvent, events.TYPE.KeyDownEvent)
 
+	// add the gamepad listener
+	world.AddListener(ps.gamePadMoveListener, events.TYPE.GamePadButtonUpEvent, events.TYPE.GamePadButtonDownEvent)
+
+	// add the stick listener
+	world.AddListener(ps.gamepadStickListener, events.TYPE.GamePadStickMoveEvent)
+
 	// add system to notify the world of position changes
 	world.AddSystem(ps.notifyPositionChanges)
 
@@ -121,6 +127,28 @@ func (ps *planeSystem) load(eng *gosge.Engine) error {
 	world.AddListener(ps.levelEvents, winning.LevelEndEventType)
 
 	return nil
+}
+
+func (ps *planeSystem) changePlaneSpeed(speed float32) {
+	// get the Movement and animation components
+	mov := ps.plane.Get(movement.Type).(movement.Movement)
+	anim := animation.Get.Animation(ps.plane)
+
+	// set the speed
+	mov.Amount.Y = speed
+
+	// animate faster
+	anim.Speed = animSpeedFast
+
+	// if we stop
+	if speed == 0 {
+		// animated slower
+		anim.Speed = animSpeedSlow
+	}
+
+	// update the entity
+	ps.plane.Set(mov)
+	ps.plane.Set(anim)
 }
 
 func (ps *planeSystem) keyMoveListener(_ *goecs.World, signal interface{}, _ float32) error {
@@ -132,39 +160,68 @@ func (ps *planeSystem) keyMoveListener(_ *goecs.World, signal interface{}, _ flo
 	case events.KeyDownEvent:
 		// if we have use the cursor up or down
 		if e.Key == device.KeyUp || e.Key == device.KeyDown {
-			// get the Movement and animation components
-			mov := ps.plane.Get(movement.Type).(movement.Movement)
-			anim := animation.Get.Animation(ps.plane)
-			switch e.Key {
-			case device.KeyUp:
-				mov.Amount.Y = -planeSpeed
-			case device.KeyDown:
-				mov.Amount.Y = planeSpeed
+			speed := planeSpeed
+			if e.Key == device.KeyUp {
+				speed = -speed
 			}
-			// now we are animated faster
-			anim.Speed = animSpeedFast
-
-			// update the entity
-			ps.plane.Set(mov)
-			ps.plane.Set(anim)
+			ps.changePlaneSpeed(speed)
 		}
 	case events.KeyUpEvent:
 		// if we have use the cursor up or down
 		if e.Key == device.KeyUp || e.Key == device.KeyDown {
-			// get the Movement and animation components
-			mov := ps.plane.Get(movement.Type).(movement.Movement)
-			anim := animation.Get.Animation(ps.plane)
-
-			// set speed to zero
-			mov.Amount.Y = 0
-			// now we are animated slower
-			anim.Speed = animSpeedSlow
-
-			// update the entity
-			ps.plane.Set(mov)
-			ps.plane.Set(anim)
+			ps.changePlaneSpeed(0)
 		}
 	}
+	return nil
+}
+
+func (ps *planeSystem) gamepadStickListener(_ *goecs.World, signal interface{}, _ float32) error {
+	switch v := signal.(type) {
+	case events.GamePadStickMoveEvent:
+		ps.changePlaneSpeed(planeSpeed * v.Movement.Y)
+	}
+	return nil
+}
+
+func (ps *planeSystem) gamePadMoveListener(world *goecs.World, signal interface{}, delta float32) error {
+	var fs interface{} = nil
+	switch v := signal.(type) {
+	case events.GamePadButtonUpEvent:
+		fsu := events.KeyUpEvent{Key: device.FirstKey}
+		switch v.Button {
+		case device.GamepadUp:
+			fsu.Key = device.KeyUp
+		case device.GamepadDown:
+			fsu.Key = device.KeyDown
+		case device.GamepadLeft:
+			fsu.Key = device.KeyLeft
+		case device.GamepadRight:
+			fsu.Key = device.KeyRight
+		}
+		if fsu.Key != device.FirstKey {
+			fs = fsu
+		}
+	case events.GamePadButtonDownEvent:
+		fsd := events.KeyDownEvent{Key: device.FirstKey}
+		switch v.Button {
+		case device.GamepadUp:
+			fsd.Key = device.KeyUp
+		case device.GamepadDown:
+			fsd.Key = device.KeyDown
+		case device.GamepadLeft:
+			fsd.Key = device.KeyLeft
+		case device.GamepadRight:
+			fsd.Key = device.KeyRight
+		}
+		if fsd.Key != device.FirstKey {
+			fs = fsd
+		}
+	}
+
+	if fs != nil {
+		return ps.keyMoveListener(world, fs, delta)
+	}
+
 	return nil
 }
 

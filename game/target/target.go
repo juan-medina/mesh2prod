@@ -97,6 +97,9 @@ func (gms *targetSystem) load(eng *gosge.Engine) error {
 	// listen to keys
 	world.AddListener(gms.keyListener, events.TYPE.KeyUpEvent)
 
+	// listen to gamepad
+	world.AddListener(gms.gamepadListener, events.TYPE.GamePadButtonUpEvent)
+
 	// listen to level events
 	world.AddListener(gms.levelEvents, winning.LevelEndEventType)
 
@@ -255,6 +258,21 @@ func (gms *targetSystem) keyListener(world *goecs.World, signal interface{}, _ f
 	case events.KeyUpEvent:
 		// if it space
 		if e.Key == device.KeySpace {
+			gms.createBullet(world)
+		}
+	}
+	return nil
+}
+
+func (gms *targetSystem) gamepadListener(world *goecs.World, signal interface{}, _ float32) error {
+	if gms.end {
+		return nil
+	}
+	switch e := signal.(type) {
+	// if we got a key up
+	case events.GamePadButtonUpEvent:
+		// if it space
+		if e.Button == device.GamepadButton3 {
 			gms.createBullet(world)
 		}
 	}
