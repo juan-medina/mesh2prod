@@ -52,6 +52,7 @@ const (
 	buttonExtraHeight = 0.20                             // the additional width for a button si it is not only the text size
 	mainMenu          = "main"                           // main menu
 	optionsMenu       = "options"                        // options menu
+	playMenu          = "play"                           // play menu
 	menuControlBorder = 2                                // menu controls border thickness
 	music             = "resources/music/menu/Of Far Different Nature - Adventure Begins (CC-BY).ogg"
 )
@@ -61,6 +62,7 @@ var (
 	barEnt      *goecs.Entity
 	valueLabel  *goecs.Entity
 	currentMenu = mainMenu
+	cloudSizes  = []string{"local", "startup", "corp", "public"}
 )
 
 // Stage the menu
@@ -109,6 +111,11 @@ func Stage(eng *gosge.Engine) error {
 
 	// create options menu
 	if err = createOptionsMenu(eng, world, dr, gs); err != nil {
+		return err
+	}
+
+	// create play menu
+	if err = createPlayMenu(eng, world, dr, gs); err != nil {
 		return err
 	}
 
@@ -244,7 +251,7 @@ func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 		ui.FlatButton{
 			Shadow: geometry.Size{Width: shadowExtraWidth * gs.Max, Height: shadowExtraHeight * gs.Max},
 			Event: events.DelaySignal{
-				Signal: events.ChangeGameStage{Stage: "game"},
+				Signal: changeMenuEvent{name: playMenu},
 				Time:   0.25,
 			},
 			Sound:  clickSound,
@@ -362,10 +369,223 @@ func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 		menu{name: mainMenu},
 	)
 
+	// listen to keys
 	world.AddListener(menuKeyListener, events.TYPE.KeyUpEvent)
 
+	// listen to gamepad
 	world.AddListener(gamepadListener, events.TYPE.GamePadButtonUpEvent)
 
+	return nil
+}
+
+func createPlayMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs geometry.Scale) error {
+	cs := eng.GetSettings().GetString("cloud_size", cloudSizes[1])
+	panelSize := geometry.Size{
+		Width:  650,
+		Height: 310,
+	}
+
+	panelPos := geometry.Point{
+		X: (dr.Width * gs.Point.X * 0.5) - (panelSize.Width * gs.Max * 0.5),
+		Y: (dr.Height * gs.Point.Y * 0.5) - (panelSize.Height * gs.Max * 0.5),
+	}
+	world.AddEntity(
+		shapes.SolidBox{
+			Size:  panelSize,
+			Scale: gs.Max,
+		},
+		panelPos,
+		color.Black.Alpha(90),
+		menu{name: playMenu},
+		effects.Hide{},
+	)
+	world.AddEntity(
+		shapes.Box{
+			Size:      panelSize,
+			Scale:     gs.Max,
+			Thickness: int32(menuControlBorder * gs.Max),
+		},
+		panelPos,
+		color.White,
+		menu{name: playMenu},
+		effects.Hide{},
+	)
+
+	labelPos := geometry.Point{
+		X: panelPos.X + (panelSize.Width * 0.5 * gs.Max),
+		Y: panelPos.Y + (40 * gs.Max),
+	}
+
+	world.AddEntity(
+		ui.Text{
+			String:     "Play",
+			Size:       fontBigSize * gs.Max,
+			Font:       font,
+			VAlignment: ui.MiddleVAlignment,
+			HAlignment: ui.CenterHAlignment,
+		},
+		labelPos,
+		color.White,
+		menu{name: playMenu},
+		effects.Hide{},
+	)
+
+	controlSize := geometry.Size{
+		Width:  150,
+		Height: 40,
+	}
+
+	labelPos.Y += 50 * gs.Max
+
+	world.AddEntity(
+		ui.Text{
+			String:     "cloud size",
+			Size:       fontSmallSize * gs.Max,
+			Font:       font,
+			VAlignment: ui.MiddleVAlignment,
+			HAlignment: ui.CenterHAlignment,
+		},
+		labelPos,
+		color.SkyBlue,
+		menu{name: playMenu},
+		effects.Hide{},
+	)
+
+	controlPos := geometry.Point{
+		X: panelPos.X + (10 * gs.Max),
+		Y: labelPos.Y + (15 * gs.Max),
+	}
+
+	for i := 0; i < len(cloudSizes); i++ {
+		checked := cloudSizes[i] == cs
+		// add the cloud size buttons
+		world.AddEntity(
+			ui.FlatButton{
+				Shadow:   geometry.Size{Width: shadowExtraWidth * gs.Max, Height: shadowExtraHeight * gs.Max},
+				Event:    changeCloudSizeEvent{size: cloudSizes[i]},
+				Sound:    clickSound,
+				Volume:   1,
+				CheckBox: true,
+				Group:    "cloud_size",
+			},
+			ui.ControlState{
+				Checked: checked,
+			},
+			controlPos,
+			shapes.Box{
+				Size:      controlSize,
+				Scale:     gs.Max,
+				Thickness: int32(menuControlBorder * gs.Max),
+			},
+			ui.Text{
+				String:     "   " + cloudSizes[i],
+				Size:       fontSmallSize * gs.Max,
+				Font:       font,
+				VAlignment: ui.MiddleVAlignment,
+				HAlignment: ui.CenterHAlignment,
+			},
+			ui.ButtonColor{
+				Gradient: color.Gradient{
+					From: color.Red,
+					To:   color.DarkPurple,
+				},
+				Border: color.DarkBlue,
+				Text:   color.SkyBlue,
+			},
+			menu{name: playMenu, focus: true},
+			effects.Hide{},
+		)
+		controlPos.X += (controlSize.Width + 10) * gs.Max
+	}
+
+	controlSize = geometry.Size{
+		Width:  200,
+		Height: 70,
+	}
+
+	controlPos = geometry.Point{
+		X: panelPos.X + (panelSize.Width * 0.5 * gs.Max) - ((controlSize.Width * 0.5) * gs.Max),
+		Y: controlPos.Y + (controlSize.Height * gs.Max),
+	}
+
+	// add the deploy button
+	world.AddEntity(
+		ui.FlatButton{
+			Shadow: geometry.Size{Width: shadowExtraWidth * gs.Max, Height: shadowExtraHeight * gs.Max},
+			Event:  events.ChangeGameStage{Stage: "game"},
+			Sound:  clickSound,
+			Volume: 1,
+		},
+		controlPos,
+		shapes.Box{
+			Size:      controlSize,
+			Scale:     gs.Max,
+			Thickness: int32(menuControlBorder * gs.Max),
+		},
+		ui.Text{
+			String:     "Deploy",
+			Size:       fontBigSize * 0.85 * gs.Max,
+			Font:       font,
+			VAlignment: ui.MiddleVAlignment,
+			HAlignment: ui.CenterHAlignment,
+		},
+		ui.ButtonColor{
+			Gradient: color.Gradient{
+				From: color.Red,
+				To:   color.DarkPurple,
+			},
+			Border: color.DarkBlue,
+			Text:   color.SkyBlue,
+		},
+		menu{name: playMenu, focus: true},
+		effects.Hide{},
+	)
+
+	controlPos.Y += (controlSize.Height + 10) * gs.Max
+	controlSize.Height = 40
+
+	// add the deploy button
+	world.AddEntity(
+		ui.FlatButton{
+			Shadow: geometry.Size{Width: shadowExtraWidth * gs.Max, Height: shadowExtraHeight * gs.Max},
+			Event:  changeMenuEvent{name: mainMenu},
+			Sound:  clickSound,
+			Volume: 1,
+		},
+		controlPos,
+		shapes.Box{
+			Size:      controlSize,
+			Scale:     gs.Max,
+			Thickness: int32(menuControlBorder * gs.Max),
+		},
+		ui.Text{
+			String:     "Cancel",
+			Size:       fontSmallSize * gs.Max,
+			Font:       font,
+			VAlignment: ui.MiddleVAlignment,
+			HAlignment: ui.CenterHAlignment,
+		},
+		ui.ButtonColor{
+			Gradient: color.Gradient{
+				From: color.Red,
+				To:   color.DarkPurple,
+			},
+			Border: color.DarkBlue,
+			Text:   color.SkyBlue,
+		},
+		menu{name: playMenu},
+		effects.Hide{},
+	)
+
+	world.AddListener(cloudSizeChangeListener, changeCloudSizeEventType)
+	return nil
+}
+
+func cloudSizeChangeListener(_ *goecs.World, signal interface{}, _ float32) error {
+	switch v := signal.(type) {
+	case changeCloudSizeEvent:
+		gEng.GetSettings().SetString("cloud_size", v.size)
+	}
 	return nil
 }
 
@@ -587,6 +807,7 @@ func createOptionsMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, 
 		effects.Hide{},
 	)
 
+	// listen to option changes
 	world.AddListener(optionsListener, masterVolumeChangeEventType, cancelOptionsEventType, saveOptionsEventType)
 
 	return nil
@@ -636,9 +857,11 @@ func menuKeyListener(world *goecs.World, signal interface{}, _ float32) error {
 		if e.Key == device.KeyReturn {
 			switch currentMenu {
 			case mainMenu:
-				world.Signal(events.ChangeGameStage{Stage: "game"})
+				world.Signal(changeMenuEvent{name: playMenu})
 			case optionsMenu:
 				world.Signal(saveOptionsEvent{})
+			case playMenu:
+				world.Signal(events.ChangeGameStage{Stage: "game"})
 			}
 		} else if e.Key == device.KeyEscape {
 			switch currentMenu {
@@ -646,29 +869,25 @@ func menuKeyListener(world *goecs.World, signal interface{}, _ float32) error {
 				world.Signal(events.GameCloseEvent{})
 			case optionsMenu:
 				world.Signal(cancelOptionsEvent{})
+			case playMenu:
+				world.Signal(changeMenuEvent{name: mainMenu})
 			}
 		}
 	}
 	return nil
 }
 
-func gamepadListener(world *goecs.World, signal interface{}, _ float32) error {
+func gamepadListener(world *goecs.World, signal interface{}, delta float32) error {
 	switch e := signal.(type) {
 	case events.GamePadButtonUpEvent:
+		key := device.FirstKey
 		if e.Button == device.GamepadStart {
-			switch currentMenu {
-			case mainMenu:
-				world.Signal(events.ChangeGameStage{Stage: "game"})
-			case optionsMenu:
-				world.Signal(saveOptionsEvent{})
-			}
+			key = device.KeyReturn
 		} else if e.Button == device.GamepadSelect || e.Button == device.GamepadButton2 {
-			switch currentMenu {
-			case mainMenu:
-				world.Signal(events.GameCloseEvent{})
-			case optionsMenu:
-				world.Signal(cancelOptionsEvent{})
-			}
+			key = device.KeyEscape
+		}
+		if key != device.FirstKey {
+			return menuKeyListener(world, events.KeyUpEvent{Key: key}, delta)
 		}
 	}
 	return nil
@@ -685,6 +904,12 @@ var cancelOptionsEventType = reflect.TypeOf(cancelOptionsEvent{})
 type saveOptionsEvent struct{}
 
 var saveOptionsEventType = reflect.TypeOf(saveOptionsEvent{})
+
+type changeCloudSizeEvent struct {
+	size string
+}
+
+var changeCloudSizeEventType = reflect.TypeOf(changeCloudSizeEvent{})
 
 type menu struct {
 	name  string
