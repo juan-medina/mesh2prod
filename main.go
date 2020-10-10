@@ -28,8 +28,14 @@ import (
 	"github.com/juan-medina/gosge/events"
 	"github.com/juan-medina/gosge/options"
 	"github.com/juan-medina/mesh2prod/game"
+	"github.com/juan-medina/mesh2prod/intro"
 	"github.com/juan-medina/mesh2prod/menu"
 	"github.com/rs/zerolog/log"
+)
+
+// general constants
+const (
+	version = "mesh2prod : 1.0.0.alpha"
 )
 
 // game options
@@ -44,9 +50,11 @@ var opt = options.Options{
 }
 
 func load(eng *gosge.Engine) error {
+	eng.GetSettings().SetString("version", version)
 	eng.AddGameStage("game", game.Stage)
 	eng.AddGameStage("menu", menu.Stage)
-	eng.World().Signal(events.ChangeGameStage{Stage: "menu"})
+	eng.AddGameStage("intro", intro.Stage)
+	eng.World().Signal(events.ChangeGameStage{Stage: "intro"})
 	return nil
 }
 
