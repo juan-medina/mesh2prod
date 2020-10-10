@@ -120,7 +120,7 @@ func Stage(eng *gosge.Engine) error {
 	// set the master volume
 	world.Signal(events.ChangeMasterVolumeEvent{Volume: currentMaster})
 
-	world.Signal(events.PlayMusicEvent{Name: music, Volume: 1})
+	world.Signal(events.PlayMusicEvent{Name: music, Volume: 0.5})
 
 	world.Signal(changeMenuEvent{name: mainMenu})
 

@@ -128,7 +128,7 @@ func Stage(eng *gosge.Engine) error {
 	}
 
 	// play the music
-	world.Signal(events.PlayMusicEvent{Name: musicFile, Volume: 1})
+	world.Signal(events.PlayMusicEvent{Name: musicFile, Volume: 0.5})
 
 	// play the plane loop
 	world.Signal(events.PlayMusicEvent{Name: planeLoop, Volume: 1})
