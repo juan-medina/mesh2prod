@@ -52,6 +52,7 @@ const (
 	buttonExtraHeight = 0.20                             // the additional width for a button si it is not only the text size
 	mainMenu          = "main"                           // main menu
 	optionsMenu       = "options"                        // options menu
+	menuControlBorder = 2                                // menu controls border thickness
 	music             = "resources/music/menu/Of Far Different Nature - Adventure Begins (CC-BY).ogg"
 )
 
@@ -121,6 +122,8 @@ func Stage(eng *gosge.Engine) error {
 
 	world.Signal(events.PlayMusicEvent{Name: music, Volume: 1})
 
+	world.Signal(changeMenuEvent{name: mainMenu})
+
 	return nil
 }
 
@@ -133,6 +136,9 @@ func changeMenuListener(world *goecs.World, signal interface{}, _ float32) error
 			mn := ent.Get(menuType).(menu)
 			// show menu
 			if mn.name == e.name {
+				if mn.focus {
+					world.Signal(events.FocusOnControlEvent{Control: ent})
+				}
 				if ent.Contains(effects.TYPE.Hide) {
 					ent.Remove(effects.TYPE.Hide)
 				}
@@ -251,7 +257,7 @@ func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 				Height: measure.Height,
 			},
 			Scale:     gs.Max,
-			Thickness: int32(2 * gs.Max),
+			Thickness: int32(menuControlBorder * gs.Max),
 		},
 		ui.Text{
 			String:     "Play!",
@@ -265,10 +271,10 @@ func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 				From: color.Red,
 				To:   color.DarkPurple,
 			},
-			Border: color.White,
+			Border: color.DarkBlue,
 			Text:   color.SkyBlue,
 		},
-		menu{name: mainMenu},
+		menu{name: mainMenu, focus: true},
 	)
 
 	smallSize := geometry.Size{
@@ -296,7 +302,7 @@ func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 		shapes.Box{
 			Size:      smallSize,
 			Scale:     gs.Max,
-			Thickness: int32(2 * gs.Max),
+			Thickness: int32(menuControlBorder * gs.Max),
 		},
 		ui.Text{
 			String:     "Options",
@@ -310,7 +316,7 @@ func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 				From: color.Red,
 				To:   color.DarkPurple,
 			},
-			Border: color.White,
+			Border: color.DarkBlue,
 			Text:   color.SkyBlue,
 		},
 		menu{name: mainMenu},
@@ -336,7 +342,7 @@ func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 		shapes.Box{
 			Size:      smallSize,
 			Scale:     gs.Max,
-			Thickness: int32(2 * gs.Max),
+			Thickness: int32(menuControlBorder * gs.Max),
 		},
 		ui.Text{
 			String:     "Exit",
@@ -350,7 +356,7 @@ func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 				From: color.Red,
 				To:   color.DarkPurple,
 			},
-			Border: color.White,
+			Border: color.DarkBlue,
 			Text:   color.SkyBlue,
 		},
 		menu{name: mainMenu},
@@ -379,7 +385,7 @@ func createOptionsMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, 
 			Scale: gs.Max,
 		},
 		panelPos,
-		color.Black.Alpha(127),
+		color.Gopher.Alpha(127),
 		menu{name: optionsMenu},
 		effects.Hide{},
 	)
@@ -387,7 +393,7 @@ func createOptionsMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, 
 		shapes.Box{
 			Size:      panelSize,
 			Scale:     gs.Max,
-			Thickness: int32(2 * gs.Max),
+			Thickness: int32(menuControlBorder * gs.Max),
 		},
 		panelPos,
 		color.White,
@@ -459,18 +465,19 @@ func createOptionsMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, 
 	// add the master volume progress bar
 	barEnt = world.AddEntity(
 		ui.ProgressBarColor{
+			Solid: color.SkyBlue,
 			Gradient: color.Gradient{
-				From:      color.Blue,
-				To:        color.SkyBlue,
+				From:      color.SkyBlue,
+				To:        color.DarkBlue,
 				Direction: color.GradientHorizontal,
 			},
-			Empty:  color.DarkBlue,
-			Border: color.White,
+			Empty:  color.Blue.Blend(color.White, 0.65),
+			Border: color.DarkBlue,
 		},
 		shapes.Box{
 			Size:      controlSize,
 			Scale:     gs.Max,
-			Thickness: int32(2 * gs.Max),
+			Thickness: int32(menuControlBorder * gs.Max),
 		},
 		controlPos,
 		menu{name: optionsMenu},
@@ -523,7 +530,7 @@ func createOptionsMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, 
 		shapes.Box{
 			Size:      controlSize,
 			Scale:     gs.Max,
-			Thickness: int32(2 * gs.Max),
+			Thickness: int32(menuControlBorder * gs.Max),
 		},
 		ui.Text{
 			String:     "Save",
@@ -537,10 +544,10 @@ func createOptionsMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, 
 				From: color.Red,
 				To:   color.DarkPurple,
 			},
-			Border: color.White,
+			Border: color.DarkBlue,
 			Text:   color.SkyBlue,
 		},
-		menu{name: optionsMenu},
+		menu{name: optionsMenu, focus: true},
 		effects.Hide{},
 	)
 
@@ -558,7 +565,7 @@ func createOptionsMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, 
 		shapes.Box{
 			Size:      controlSize,
 			Scale:     gs.Max,
-			Thickness: int32(2 * gs.Max),
+			Thickness: int32(menuControlBorder * gs.Max),
 		},
 		ui.Text{
 			String:     "Cancel",
@@ -572,7 +579,7 @@ func createOptionsMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, 
 				From: color.Red,
 				To:   color.DarkPurple,
 			},
-			Border: color.White,
+			Border: color.DarkBlue,
 			Text:   color.SkyBlue,
 		},
 		menu{name: optionsMenu},
@@ -625,7 +632,7 @@ func optionsListener(world *goecs.World, signal interface{}, _ float32) error {
 func menuKeyListener(world *goecs.World, signal interface{}, _ float32) error {
 	switch e := signal.(type) {
 	case events.KeyUpEvent:
-		if e.Key == device.KeyReturn || e.Key == device.KeySpace {
+		if e.Key == device.KeyReturn {
 			switch currentMenu {
 			case mainMenu:
 				world.Signal(events.ChangeGameStage{Stage: "game"})
@@ -657,7 +664,8 @@ type saveOptionsEvent struct{}
 var saveOptionsEventType = reflect.TypeOf(saveOptionsEvent{})
 
 type menu struct {
-	name string
+	name  string
+	focus bool
 }
 
 var menuType = reflect.TypeOf(menu{})
