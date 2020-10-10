@@ -176,6 +176,9 @@ func (ps *planeSystem) keyMoveListener(_ *goecs.World, signal interface{}, _ flo
 }
 
 func (ps *planeSystem) gamepadStickListener(_ *goecs.World, signal interface{}, _ float32) error {
+	if ps.end {
+		return nil
+	}
 	switch v := signal.(type) {
 	case events.GamePadStickMoveEvent:
 		ps.changePlaneSpeed(planeSpeed * v.Movement.Y)
