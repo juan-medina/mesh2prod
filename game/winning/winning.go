@@ -168,6 +168,9 @@ func (ws *winningSystem) load(eng *gosge.Engine) error {
 	// listen to keys
 	world.AddListener(ws.KeysListener, events.TYPE.KeyUpEvent)
 
+	// listen to gamepad
+	world.AddListener(ws.gamepadListener, events.TYPE.GamePadButtonUpEvent)
+
 	return nil
 }
 
@@ -175,6 +178,7 @@ func (ws *winningSystem) reachProductionSystem(world *goecs.World, _ float32) er
 	if ws.end {
 		return nil
 	}
+
 	mesh := world.Iterator(component.TYPE.Mesh).Value()
 	prod := world.Iterator(component.TYPE.Production).Value()
 
@@ -271,7 +275,7 @@ func (ws *winningSystem) addMessage(world *goecs.World) error {
 	// measuring the biggest text for size all the buttons equally
 	var measure geometry.Size
 	var err error
-	if measure, err = ws.eng.MeasureText(font, " Yay ! ", fontButtonSize); err != nil {
+	if measure, err = ws.eng.MeasureText(font, " Redeploy ", fontButtonSize); err != nil {
 		return err
 	}
 
@@ -279,11 +283,53 @@ func (ws *winningSystem) addMessage(world *goecs.World) error {
 	measure.Height += measure.Height * buttonExtraHeight
 
 	buttonPos := geometry.Point{
-		X: textPos.X - (measure.Width * ws.gs.Max * 0.5),
+		X: textPos.X - ((measure.Width - 5) * ws.gs.Max),
 		Y: boxPos.Y + (boxSize.Height * ws.gs.Max) - (measure.Height * ws.gs.Max * 1.25),
 	}
 
 	// add the play button, it will sent a event to change to the main stage
+	playEnt := world.AddEntity(
+		ui.FlatButton{
+			Shadow: geometry.Size{Width: shadowExtraWidth * ws.gs.Max, Height: shadowExtraHeight * ws.gs.Max},
+			Event: events.DelaySignal{
+				Signal: events.ChangeGameStage{Stage: "game"},
+				Time:   0.25,
+			},
+			Sound:  clickSound,
+			Volume: 1,
+		},
+		buttonPos,
+		shapes.Box{
+			Size: geometry.Size{
+				Width:  measure.Width,
+				Height: measure.Height,
+			},
+			Scale:     ws.gs.Max,
+			Thickness: int32(2 * ws.gs.Max),
+		},
+		ui.Text{
+			String:     "Redeploy",
+			Size:       fontButtonSize * ws.gs.Max,
+			Font:       font,
+			VAlignment: ui.MiddleVAlignment,
+			HAlignment: ui.CenterHAlignment,
+		},
+		ui.ButtonColor{
+			Gradient: color.Gradient{
+				From: color.Red,
+				To:   color.DarkPurple,
+			},
+			Border: color.White,
+			Text:   color.SkyBlue,
+		},
+		effects.Layer{Depth: -2},
+	)
+
+	world.Signal(events.FocusOnControlEvent{Control: playEnt})
+
+	buttonPos.X = buttonPos.X + ((measure.Width + 10) * ws.gs.Max)
+
+	// add the exit button, it will sent a event to change to the main stage
 	world.AddEntity(
 		ui.FlatButton{
 			Shadow: geometry.Size{Width: shadowExtraWidth * ws.gs.Max, Height: shadowExtraHeight * ws.gs.Max},
@@ -304,7 +350,7 @@ func (ws *winningSystem) addMessage(world *goecs.World) error {
 			Thickness: int32(2 * ws.gs.Max),
 		},
 		ui.Text{
-			String:     "Yay!",
+			String:     "Exit",
 			Size:       fontButtonSize * ws.gs.Max,
 			Font:       font,
 			VAlignment: ui.MiddleVAlignment,
@@ -320,6 +366,7 @@ func (ws *winningSystem) addMessage(world *goecs.World) error {
 		},
 		effects.Layer{Depth: -2},
 	)
+
 	return nil
 }
 
@@ -340,7 +387,7 @@ func (ws *winningSystem) finalScoreListener(world *goecs.World, signal interface
 func (ws *winningSystem) KeysListener(world *goecs.World, signal interface{}, _ float32) error {
 	switch e := signal.(type) {
 	case events.KeyUpEvent:
-		if e.Key == device.KeySpace || e.Key == device.KeyReturn {
+		if e.Key == device.KeyReturn {
 			if !ws.end {
 				return nil
 			}
@@ -383,6 +430,20 @@ func (ws *winningSystem) updateProdBar(world *goecs.World, _ float32) error {
 	bar.Current = percent
 	ws.prodBar.Set(bar)
 
+	return nil
+}
+
+func (ws *winningSystem) gamepadListener(world *goecs.World, signal interface{}, _ float32) error {
+	switch v := signal.(type) {
+	case events.GamePadButtonUpEvent:
+		if v.Button == device.GamepadSelect {
+			world.Signal(events.PlaySoundEvent{Name: clickSound, Volume: 1})
+			world.Signal(events.DelaySignal{
+				Signal: events.ChangeGameStage{Stage: "menu"},
+				Time:   0.25,
+			})
+		}
+	}
 	return nil
 }
 
