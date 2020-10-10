@@ -854,16 +854,7 @@ func optionsListener(world *goecs.World, signal interface{}, _ float32) error {
 func menuKeyListener(world *goecs.World, signal interface{}, _ float32) error {
 	switch e := signal.(type) {
 	case events.KeyUpEvent:
-		if e.Key == device.KeyReturn {
-			switch currentMenu {
-			case mainMenu:
-				world.Signal(changeMenuEvent{name: playMenu})
-			case optionsMenu:
-				world.Signal(saveOptionsEvent{})
-			case playMenu:
-				world.Signal(events.ChangeGameStage{Stage: "game"})
-			}
-		} else if e.Key == device.KeyEscape {
+		if e.Key == device.KeyEscape {
 			switch currentMenu {
 			case mainMenu:
 				world.Signal(events.GameCloseEvent{})
@@ -877,7 +868,7 @@ func menuKeyListener(world *goecs.World, signal interface{}, _ float32) error {
 	return nil
 }
 
-func gamepadListener(world *goecs.World, signal interface{}, delta float32) error {
+func gamepadListener(world *goecs.World, signal interface{}, _ float32) error {
 	switch e := signal.(type) {
 	case events.GamePadButtonUpEvent:
 		key := device.FirstKey
@@ -887,7 +878,8 @@ func gamepadListener(world *goecs.World, signal interface{}, delta float32) erro
 			key = device.KeyEscape
 		}
 		if key != device.FirstKey {
-			return menuKeyListener(world, events.KeyUpEvent{Key: key}, delta)
+			world.Signal(events.KeyDownEvent{Key: key})
+			world.Signal(events.KeyUpEvent{Key: key})
 		}
 	}
 	return nil

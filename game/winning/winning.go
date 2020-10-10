@@ -387,16 +387,7 @@ func (ws *winningSystem) finalScoreListener(world *goecs.World, signal interface
 func (ws *winningSystem) KeysListener(world *goecs.World, signal interface{}, _ float32) error {
 	switch e := signal.(type) {
 	case events.KeyUpEvent:
-		if e.Key == device.KeyReturn {
-			if !ws.end {
-				return nil
-			}
-			world.Signal(events.PlaySoundEvent{Name: clickSound, Volume: 1})
-			world.Signal(events.DelaySignal{
-				Signal: events.ChangeGameStage{Stage: "game"},
-				Time:   0.25,
-			})
-		} else if e.Key == device.KeyEscape {
+		if e.Key == device.KeyEscape {
 			world.Signal(events.PlaySoundEvent{Name: clickSound, Volume: 1})
 			world.Signal(events.DelaySignal{
 				Signal: events.ChangeGameStage{Stage: "menu"},
