@@ -364,6 +364,8 @@ func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 
 	world.AddListener(menuKeyListener, events.TYPE.KeyUpEvent)
 
+	world.AddListener(gamepadListener, events.TYPE.GamePadButtonUpEvent)
+
 	return nil
 }
 
@@ -385,7 +387,7 @@ func createOptionsMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, 
 			Scale: gs.Max,
 		},
 		panelPos,
-		color.Gopher.Alpha(127),
+		color.Black.Alpha(90),
 		menu{name: optionsMenu},
 		effects.Hide{},
 	)
@@ -515,7 +517,6 @@ func createOptionsMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, 
 		Height: 40,
 	}
 
-	controlPos.X = panelPos.X + (panelSize.Width * 0.5 * gs.Max) - ((controlSize.Width + 20) * gs.Max)
 	controlPos.Y += 60 * gs.Max
 
 	// add the save button
@@ -551,7 +552,7 @@ func createOptionsMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, 
 		effects.Hide{},
 	)
 
-	controlPos.X = controlPos.X + ((controlSize.Width + 20) * gs.Max)
+	controlPos.X = controlPos.X + ((controlSize.Width + 10) * gs.Max)
 
 	// add the cancel button
 	world.AddEntity(
@@ -640,6 +641,28 @@ func menuKeyListener(world *goecs.World, signal interface{}, _ float32) error {
 				world.Signal(saveOptionsEvent{})
 			}
 		} else if e.Key == device.KeyEscape {
+			switch currentMenu {
+			case mainMenu:
+				world.Signal(events.GameCloseEvent{})
+			case optionsMenu:
+				world.Signal(cancelOptionsEvent{})
+			}
+		}
+	}
+	return nil
+}
+
+func gamepadListener(world *goecs.World, signal interface{}, _ float32) error {
+	switch e := signal.(type) {
+	case events.GamePadButtonUpEvent:
+		if e.Button == device.GamepadStart {
+			switch currentMenu {
+			case mainMenu:
+				world.Signal(events.ChangeGameStage{Stage: "game"})
+			case optionsMenu:
+				world.Signal(saveOptionsEvent{})
+			}
+		} else if e.Button == device.GamepadSelect || e.Button == device.GamepadButton2 {
 			switch currentMenu {
 			case mainMenu:
 				world.Signal(events.GameCloseEvent{})
