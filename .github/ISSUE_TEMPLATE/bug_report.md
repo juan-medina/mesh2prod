@@ -18,6 +18,7 @@ Steps to reproduce the behaviour:
 A clear and concise description of what you expected to happen.
 
 **Specs (please complete the following information):**
+ - Game Version: [e.g. 1.0.0.alpha]
  - Go Version: [e.g. 1.14, 1.15]
  - OS: [e.g. Mac, Windows, Ubuntu]
  - Version [e.g. Mojave, 10 Home, 19.04]
