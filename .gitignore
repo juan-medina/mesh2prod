@@ -5,3 +5,4 @@
 build/out
 build/*.zip
 build/*.gz
+.DS_Store
