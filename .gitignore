@@ -2,3 +2,6 @@
 *.iml
 /coverage.out
 *.log
+build/out
+build/*.zip
+build/*.gz

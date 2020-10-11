@@ -2,15 +2,19 @@
 Deliver the Service Mesh to Production, a parody game using [GOSGE](https://github.com/juan-medina/gosge)
 
 [![License: Apache2](https://img.shields.io/badge/license-Apache%202-blue.svg)](/LICENSE)
+[![go version](https://img.shields.io/github/v/tag/juan-medina/mesh2prod?label=version)](https://github.com/juan-medina/mesh2prod)
 [![Build Status](https://travis-ci.com/juan-medina/gosge.svg?branch=main)](https://travis-ci.com/juan-medina/mesh2prod)
 [![conduct](https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant%202.0-purple.svg?style=flat-square)](https://www.contributor-covenant.org/version/2/0/code_of_conduct/)
 
 ## Info
 
-TBC
+This is a parody game when you will deliver the mesh to prod flying through the cloud with your gopher plane destroying rogue containers shooting side-cards and earning BlockCoins in the process.
+
+## Video
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/t7vNrnATPwc/0.jpg)](https://www.youtube.com/watch?v=t7vNrnATPwc)
 
 ## Run the game
-
 
 ```bash
 $ make run
