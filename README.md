@@ -14,6 +14,10 @@ This is a parody game when you will deliver the mesh to prod flying through the 
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/t7vNrnATPwc/0.jpg)](https://www.youtube.com/watch?v=t7vNrnATPwc)
 
+## Download
+
+To download the game use the [release page](https://github.com/juan-medina/mesh2prod/releases)
+
 ## Run the game
 
 ```bash
