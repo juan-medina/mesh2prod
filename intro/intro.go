@@ -23,14 +23,16 @@
 package intro
 
 import (
+	"reflect"
+
 	"github.com/juan-medina/goecs"
 	"github.com/juan-medina/gosge"
 	"github.com/juan-medina/gosge/components/color"
+	"github.com/juan-medina/gosge/components/device"
 	"github.com/juan-medina/gosge/components/geometry"
 	"github.com/juan-medina/gosge/components/sprite"
 	"github.com/juan-medina/gosge/components/ui"
 	"github.com/juan-medina/gosge/events"
-	"reflect"
 )
 
 // intro logic constants
@@ -76,7 +78,20 @@ func Stage(eng *gosge.Engine) error {
 	// add the fade off listener
 	world.AddListener(fadeOffListener, fadeOffEventType)
 
+	// listen to keys
+	world.AddListener(keysListener, events.TYPE.KeyUpEvent)
+
 	return err
+}
+
+func keysListener(world *goecs.World, signal interface{}, _ float32) error {
+	switch v := signal.(type) {
+	case events.KeyUpEvent:
+		if v.Key == device.KeyEscape {
+			world.Signal(events.ChangeGameStage{Stage: "menu"})
+		}
+	}
+	return nil
 }
 
 func fadeOffListener(world *goecs.World, signal interface{}, _ float32) error {
