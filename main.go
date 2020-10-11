@@ -23,6 +23,9 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/juan-medina/gosge"
 	"github.com/juan-medina/gosge/components/color"
 	"github.com/juan-medina/gosge/events"
@@ -59,7 +62,25 @@ func load(eng *gosge.Engine) error {
 }
 
 func main() {
-	if err := gosge.Run(opt, load); err != nil {
+	var err error = nil
+	// if we can not find the resources folder
+	if _, err = os.Stat("resources"); os.IsNotExist(err) {
+		var dir string
+		// get our executable path
+		if dir, err = filepath.Abs(filepath.Dir(os.Args[0])); err != nil {
+			log.Fatal().Err(err).Msg("error checking path")
+		}
+		// change working directory
+		if err = os.Chdir(dir); err != nil {
+			log.Fatal().Err(err).Msg("error changing path")
+		}
+		// final check if now we could find the resources
+		if _, err = os.Stat("resources"); os.IsNotExist(err) {
+			log.Fatal().Msg("can't find resources")
+		}
+	}
+	// run the game
+	if err = gosge.Run(opt, load); err != nil {
 		log.Fatal().Err(err).Msg("error running the game")
 	}
 }
