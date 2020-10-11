@@ -102,8 +102,11 @@ func Stage(eng *gosge.Engine) error {
 		return err
 	}
 
+	cs := constants.CloudSize(eng.GetSettings().GetIn32(constants.CloudSizeConfig, int32(constants.StartupCloud)))
+	length := constants.CloudSizes[cs]
+
 	// add the map
-	if err = gamemap.System(eng, gameScale, designResolution, 300); err != nil {
+	if err = gamemap.System(eng, gameScale, designResolution, int(length)); err != nil {
 		return err
 	}
 

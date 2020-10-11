@@ -34,6 +34,7 @@ import (
 	"github.com/juan-medina/gosge/components/sprite"
 	"github.com/juan-medina/gosge/components/ui"
 	"github.com/juan-medina/gosge/events"
+	"github.com/juan-medina/mesh2prod/game/constants"
 	"reflect"
 )
 
@@ -62,7 +63,6 @@ var (
 	barEnt      *goecs.Entity
 	valueLabel  *goecs.Entity
 	currentMenu = mainMenu
-	cloudSizes  = []string{"local", "startup", "corp", "public"}
 )
 
 // Stage the menu
@@ -122,7 +122,7 @@ func Stage(eng *gosge.Engine) error {
 	world.AddListener(changeMenuListener, changeMenuEventType)
 
 	// set the master volume to it config value
-	currentMaster := eng.GetSettings().GetFloat32("master_volume", 1)
+	currentMaster := eng.GetSettings().GetFloat32(constants.MasterVolumeConfig, constants.DefaultMasterVolume)
 
 	// set the master volume
 	world.Signal(events.ChangeMasterVolumeEvent{Volume: currentMaster})
@@ -379,7 +379,7 @@ func createMainMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 }
 
 func createPlayMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs geometry.Scale) error {
-	cs := eng.GetSettings().GetString("cloud_size", cloudSizes[1])
+	cs := constants.CloudSize(eng.GetSettings().GetIn32(constants.CloudSizeConfig, int32(constants.StartupCloud)))
 	panelSize := geometry.Size{
 		Width:  650,
 		Height: 310,
@@ -456,13 +456,13 @@ func createPlayMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 		Y: labelPos.Y + (15 * gs.Max),
 	}
 
-	for i := 0; i < len(cloudSizes); i++ {
-		checked := cloudSizes[i] == cs
+	for _, c := range constants.Clouds {
+		checked := cs == c
 		// add the cloud size buttons
 		world.AddEntity(
 			ui.FlatButton{
 				Shadow:   geometry.Size{Width: shadowExtraWidth * gs.Max, Height: shadowExtraHeight * gs.Max},
-				Event:    changeCloudSizeEvent{size: cloudSizes[i]},
+				Event:    changeCloudSizeEvent{size: c},
 				Sound:    clickSound,
 				Volume:   1,
 				CheckBox: true,
@@ -478,7 +478,7 @@ func createPlayMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 				Thickness: int32(menuControlBorder * gs.Max),
 			},
 			ui.Text{
-				String:     "   " + cloudSizes[i],
+				String:     "   " + constants.CloudNames[c],
 				Size:       fontSmallSize * gs.Max,
 				Font:       font,
 				VAlignment: ui.MiddleVAlignment,
@@ -584,13 +584,13 @@ func createPlayMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs 
 func cloudSizeChangeListener(_ *goecs.World, signal interface{}, _ float32) error {
 	switch v := signal.(type) {
 	case changeCloudSizeEvent:
-		gEng.GetSettings().SetString("cloud_size", v.size)
+		gEng.GetSettings().SetInt32(constants.CloudSizeConfig, int32(v.size))
 	}
 	return nil
 }
 
 func createOptionsMenu(eng *gosge.Engine, world *goecs.World, dr geometry.Size, gs geometry.Scale) error {
-	currentMaster := float32(int(eng.GetSettings().GetFloat32("master_volume", 1) * 100))
+	currentMaster := float32(int(eng.GetSettings().GetFloat32(constants.MasterVolumeConfig, constants.DefaultMasterVolume) * 100))
 
 	panelSize := geometry.Size{
 		Width:  520,
@@ -827,7 +827,7 @@ func optionsListener(world *goecs.World, signal interface{}, _ float32) error {
 		valueLabel.Set(text)
 		world.Signal(events.ChangeMasterVolumeEvent{Volume: float32(value) / 100})
 	case cancelOptionsEvent:
-		master := float32(int(gEng.GetSettings().GetFloat32("master_volume", 1) * 100))
+		master := float32(int(gEng.GetSettings().GetFloat32(constants.MasterVolumeConfig, constants.DefaultMasterVolume) * 100))
 		bar := ui.Get.ProgressBar(barEnt)
 		bar.Current = master
 		barEnt.Set(bar)
@@ -842,7 +842,7 @@ func optionsListener(world *goecs.World, signal interface{}, _ float32) error {
 	case saveOptionsEvent:
 		bar := ui.Get.ProgressBar(barEnt)
 		value := bar.Current / 100
-		gEng.GetSettings().SetFloat32("master_volume", value)
+		gEng.GetSettings().SetFloat32(constants.MasterVolumeConfig, value)
 		world.Signal(events.DelaySignal{
 			Signal: changeMenuEvent{name: mainMenu},
 			Time:   0.25,
@@ -898,7 +898,7 @@ type saveOptionsEvent struct{}
 var saveOptionsEventType = reflect.TypeOf(saveOptionsEvent{})
 
 type changeCloudSizeEvent struct {
-	size string
+	size constants.CloudSize
 }
 
 var changeCloudSizeEventType = reflect.TypeOf(changeCloudSizeEvent{})

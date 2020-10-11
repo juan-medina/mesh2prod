@@ -24,5 +24,41 @@ package constants
 
 // game constants
 const (
-	SpriteSheet = "resources/sprites/mesh2prod.json" // game sprite sheet
+	SpriteSheet         = "resources/sprites/mesh2prod.json" // game sprite sheet
+	CloudSizeConfig     = "cloud_size"                       // cloud side config value
+	MasterVolumeConfig  = "master_volume"                    // master volume config setting
+	DefaultMasterVolume = 1                                  // Default master volume
+)
+
+// CloudSize is the cloud size
+type CloudSize int
+
+// clouds
+const (
+	LocalCloud   = CloudSize(iota) // LocalCloudSize cloud size
+	StartupCloud                   // StartupCloudSize cloud size
+	CorpCloud                      // CorpCloudSize cloud size
+	PublicCloud                    // PublicCloudSize cloud size
+)
+
+// clouds
+var (
+	// Clouds is our clouds types
+	Clouds = []CloudSize{LocalCloud, StartupCloud, CorpCloud, PublicCloud}
+
+	// CloudNames is our cloud names
+	CloudNames = map[CloudSize]string{
+		LocalCloud:   "local",
+		StartupCloud: "startup",
+		CorpCloud:    "corp",
+		PublicCloud:  "public",
+	}
+
+	// CloudSizes is our cloud sizes
+	CloudSizes = map[CloudSize]int{
+		LocalCloud:   50,
+		StartupCloud: 150,
+		CorpCloud:    300,
+		PublicCloud:  450,
+	}
 )
