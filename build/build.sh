@@ -46,6 +46,8 @@ go build -o build/out ./...
 
 cd build
 
+chmod +xX out/mesh2prod
+
 cp -r ../resources/* out/resources/
 
 cd out/ && tar -zcvf ../"$package" * && cd - 
